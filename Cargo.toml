@@ -1,3 +1,17 @@
 [workspace]
 resolver = "2"
-members = []
+members = [
+    "pastelito",
+    "pastelito-data",
+    "pastelito-model",
+    "pastelito-core",
+    "fuzz",
+    "pastelito-lsp"
+]
+
+[workspace.package]
+license = "MIT"
+
+[profile.release-with-debug]
+inherits = "release"
+debug = true

@@ -1,0 +1,21 @@
+[package]
+name = "fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+lazy_static = "1.5.0"
+libfuzzer-sys = "0.4"
+pastelito-core = { path = "../pastelito-core" }
+
+
+[[bin]]
+name = "markdown"
+path = "fuzz_targets/markdown.rs"
+test = false
+doc = false
+bench = false

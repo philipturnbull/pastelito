@@ -1,0 +1,3 @@
+[submodule "pastelito-model/prose"]
+	path = pastelito-model/prose
+	url = https://github.com/jdkato/prose
