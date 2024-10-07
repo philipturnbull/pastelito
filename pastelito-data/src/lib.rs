@@ -3,7 +3,7 @@
 use speedy::{Readable, Writable};
 use std::str::FromStr;
 use std::{collections::HashMap, ops::Range};
-use strum::EnumCount;
+use strum::{EnumCount, IntoEnumIterator as _};
 use strum_macros::{EnumCount, EnumIter, EnumString, IntoStaticStr};
 
 /// A part of speech.
@@ -23,6 +23,7 @@ use strum_macros::{EnumCount, EnumIter, EnumString, IntoStaticStr};
     EnumString,
     IntoStaticStr,
 )]
+#[repr(u8)]
 pub enum POS {
     #[strum(serialize = "-START-")]
     Start,
@@ -127,79 +128,30 @@ pub enum POS {
 /// A mapping of `POS` to a score.
 #[derive(Copy, Clone, Readable, Writable)]
 pub struct Scores {
-    scores: [(POS, f32); POS::COUNT],
+    scores: [f32; POS::COUNT],
 }
 
 impl Scores {
     /// Add `score` to the current score for `pos`.
     pub fn update(&mut self, pos: POS, score: f32) {
-        self.scores.iter_mut().find(|(p, _)| *p == pos).unwrap().1 += score;
+        self.scores[pos as usize] += score;
     }
 
     /// Get the `POS` with the highest score.
     pub fn max(&self) -> POS {
         self.scores
             .iter()
-            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+            .zip(POS::iter())
+            .max_by(|a, b| a.0.partial_cmp(b.0).unwrap())
             .unwrap()
-            .0
+            .1
     }
 }
 
 impl Default for Scores {
     fn default() -> Self {
         Scores {
-            scores: [
-                (POS::Start, 0.0),
-                (POS::Start2, 0.0),
-                (POS::End, 0.0),
-                (POS::End2, 0.0),
-                (POS::Hash, 0.0),
-                (POS::Dollar, 0.0),
-                (POS::TwoQuotes, 0.0),
-                (POS::Open, 0.0),
-                (POS::Close, 0.0),
-                (POS::Comma, 0.0),
-                (POS::EndOfSentence, 0.0),
-                (POS::Colon, 0.0),
-                (POS::CoordinatingConjunction, 0.0),
-                (POS::CardinalNumber, 0.0),
-                (POS::Determiner, 0.0),
-                (POS::ExistentialThere, 0.0),
-                (POS::ForeignWord, 0.0),
-                (POS::PrepositionOrSubordinatingConjunction, 0.0),
-                (POS::Adjective, 0.0),
-                (POS::AdjectiveComparative, 0.0),
-                (POS::AdjectiveSuperlative, 0.0),
-                (POS::ListItemMarker, 0.0),
-                (POS::Modal, 0.0),
-                (POS::NounSingularOrMass, 0.0),
-                (POS::ProperNounSingular, 0.0),
-                (POS::ProperNounPlural, 0.0),
-                (POS::NounPlural, 0.0),
-                (POS::Predeterminer, 0.0),
-                (POS::PossessiveEnding, 0.0),
-                (POS::PersonalPronoun, 0.0),
-                (POS::PossesivePronoun, 0.0),
-                (POS::Adverb, 0.0),
-                (POS::AdverbComparative, 0.0),
-                (POS::AdverbSuperlative, 0.0),
-                (POS::Particle, 0.0),
-                (POS::Symbol, 0.0),
-                (POS::To, 0.0),
-                (POS::Interjection, 0.0),
-                (POS::VerbBaseForm, 0.0),
-                (POS::VerbPastTense, 0.0),
-                (POS::VerbGerundOrPresentParticiple, 0.0),
-                (POS::VerbPastParticiple, 0.0),
-                (POS::VerbNon3rdPersonSingularPresent, 0.0),
-                (POS::Verb3rdPersonSingularPresent, 0.0),
-                (POS::WhDeterminer, 0.0),
-                (POS::WhPronoun, 0.0),
-                (POS::PossesiveWhPronoun, 0.0),
-                (POS::WhAdverb, 0.0),
-                (POS::Backtick, 0.0),
-            ],
+            scores: [0.0; POS::COUNT],
         }
     }
 }
@@ -685,6 +637,8 @@ impl Model {
 
 #[cfg(test)]
 mod tests {
+    use strum::{EnumCount, IntoEnumIterator as _};
+
     use crate::{ContextSuffix, ContextWord, Feature, POS};
 
     fn eq(data: &str, expected: Feature) {
@@ -1018,5 +972,17 @@ mod tests {
     #[test]
     fn unknown_feature() {
         let _: Feature = "unknown".to_owned().into();
+    }
+
+    #[test]
+    fn pos_indexes() {
+        // `Scores` uses `POS` as an array index. Check that the indexes are in
+        // the range (0..POS::COUNT)
+        let actual = POS::iter()
+            .map(|pos| pos as u8 as usize)
+            .collect::<Vec<_>>();
+        let expected = (0..POS::COUNT).collect::<Vec<_>>();
+
+        assert_eq!(actual, expected);
     }
 }
