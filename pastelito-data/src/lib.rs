@@ -134,6 +134,7 @@ pub struct Scores {
 
 impl Scores {
     /// Add `score` to the current score for `pos`.
+    #[inline]
     pub fn update(&mut self, pos: POS, score: f32) {
         self.scores[pos as usize] += score;
     }
