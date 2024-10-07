@@ -1,4 +1,4 @@
-use pastelito_data::{ContextWord, Feature, Model, Scores, POS};
+use pastelito_data::{ContextWord, Feature, Model, POS};
 use strum::EnumCount as _;
 use tracing::debug_span;
 
@@ -95,8 +95,6 @@ impl Perceptron {
         let context_index = word_index + 2;
         let mut features = Vec::with_capacity(Feature::COUNT);
 
-        features.push(Feature::Bias);
-
         if let Ok(suffix) = token.try_into() {
             features.push(Feature::Suffix(suffix));
         }
@@ -130,7 +128,7 @@ impl Perceptron {
             features.push(Feature::IPlus2Word(word));
         }
 
-        let mut scores = Scores::default();
+        let mut scores = self.model.initial_scores();
 
         for feature in features {
             if let Some(weights) = self.model.get(&feature) {
