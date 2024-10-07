@@ -1,5 +1,4 @@
-use pastelito_data::{ContextWord, Model, POS};
-use std::collections::HashMap;
+use pastelito_data::{ContextWord, Model, Scores, POS};
 use tracing::debug_span;
 
 use crate::block::{Block, Word};
@@ -93,7 +92,7 @@ impl Perceptron {
         p2: POS,
     ) -> POS {
         let context_index = word_index + 2;
-        let mut features = Vec::new();
+        let mut features = Vec::with_capacity(pastelito_data::max_features());
 
         features.push(pastelito_data::bias());
 
@@ -130,23 +129,16 @@ impl Perceptron {
             features.push(pastelito_data::iplus2word(word));
         }
 
-        let mut scores = HashMap::<POS, f32>::new();
+        let mut scores = Scores::default();
 
         for feature in features {
             if let Some(weights) = self.model.get_feature(&feature) {
                 for (pos, weight) in weights {
-                    scores
-                        .entry(*pos)
-                        .and_modify(|s| *s += *weight)
-                        .or_insert(*weight);
+                    scores.update(*pos, *weight);
                 }
             }
         }
 
-        scores
-            .into_iter()
-            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
-            .map(|(pos, _)| pos)
-            .unwrap()
+        scores.max()
     }
 }
