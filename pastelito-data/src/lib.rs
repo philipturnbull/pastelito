@@ -317,7 +317,9 @@ impl ContextWord {
 }
 
 /// A feature for the perceptron
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd, Readable, Writable)]
+#[derive(
+    Copy, Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd, Readable, Writable, EnumCount,
+)]
 pub enum Feature {
     Bias,
     Suffix(ContextSuffix),
@@ -333,6 +335,12 @@ pub enum Feature {
     IPlus1Word(ContextWord),
     IPlus1Suffix(ContextSuffix),
     IPlus2Word(ContextWord),
+}
+
+impl Feature {
+    pub fn num_features() -> usize {
+        14
+    }
 }
 
 impl From<String> for Feature {
@@ -383,186 +391,6 @@ impl From<String> for Feature {
     }
 }
 
-/// The `IsFeature` trait allows us to abstract over how a feature is encoded.
-pub trait IsFeature {
-    type Output;
-
-    /// The maximum number of features
-    fn max_features() -> usize;
-    /// Create a `bias`` feature
-    fn bias() -> Self::Output;
-    /// Create a `suffix` feature
-    fn suffix(suffix: ContextSuffix) -> Self::Output;
-    /// Create a `pref1` feature
-    fn pref1(c: u8) -> Self::Output;
-    /// Create an `i-1 tag` feature
-    fn iminus1tag(pos: POS) -> Self::Output;
-    /// Create an `i-2 tag` feature
-    fn iminus2tag(pos: POS) -> Self::Output;
-    /// Create an `i tag+i-2 tag` feature
-    fn itagplusiminus2tag(pos1: POS, pos2: POS) -> Self::Output;
-    /// Create an `i word` feature
-    fn iword(word: ContextWord) -> Self::Output;
-    /// Create an `i-1 tag+i word` feature
-    fn iminus1tagplusiword(pos: POS, word: ContextWord) -> Self::Output;
-    /// Create an `i-1 word` feature
-    fn iminus1word(word: ContextWord) -> Self::Output;
-    /// Create an `i-1 suffix` feature
-    fn iminus1suffix(suffix: ContextSuffix) -> Self::Output;
-    /// Create an `i-2 word` feature
-    fn iminus2word(word: ContextWord) -> Self::Output;
-    /// Create an `i+1 word` feature
-    fn iplus1word(word: ContextWord) -> Self::Output;
-    /// Create an `i+1 suffix` feature
-    fn iplus1suffix(suffix: ContextSuffix) -> Self::Output;
-    /// Create an `i+2 word` feature
-    fn iplus2word(word: ContextWord) -> Self::Output;
-}
-
-impl IsFeature for Feature {
-    type Output = Feature;
-
-    fn max_features() -> usize {
-        14
-    }
-
-    fn bias() -> Self::Output {
-        Feature::Bias
-    }
-
-    fn suffix(suffix: ContextSuffix) -> Self::Output {
-        Feature::Suffix(suffix)
-    }
-
-    fn pref1(c: u8) -> Self::Output {
-        Feature::Pref1(c)
-    }
-
-    fn iminus1tag(pos: POS) -> Self::Output {
-        Feature::IMinus1Tag(pos)
-    }
-
-    fn iminus2tag(pos: POS) -> Self::Output {
-        Feature::IMinus2Tag(pos)
-    }
-
-    fn itagplusiminus2tag(pos1: POS, pos2: POS) -> Self::Output {
-        Feature::ITagPlusIMinus2Tag(pos1, pos2)
-    }
-
-    fn iword(word: ContextWord) -> Self::Output {
-        Feature::IWord(word)
-    }
-
-    fn iminus1tagplusiword(pos: POS, word: ContextWord) -> Self::Output {
-        Feature::IMinus1TagPlusIWord(pos, word)
-    }
-
-    fn iminus1word(word: ContextWord) -> Self::Output {
-        Feature::IMinus1Word(word)
-    }
-
-    fn iminus1suffix(suffix: ContextSuffix) -> Self::Output {
-        Feature::IMinus1Suffix(suffix)
-    }
-
-    fn iminus2word(word: ContextWord) -> Self::Output {
-        Feature::IMinus2Word(word)
-    }
-
-    fn iplus1word(word: ContextWord) -> Self::Output {
-        Feature::IPlus1Word(word)
-    }
-
-    fn iplus1suffix(suffix: ContextSuffix) -> Self::Output {
-        Feature::IPlus1Suffix(suffix)
-    }
-
-    fn iplus2word(word: ContextWord) -> Self::Output {
-        Feature::IPlus2Word(word)
-    }
-}
-
-fn format_context_suffix(suffix: ContextSuffix) -> String {
-    suffix
-        .chars
-        .iter()
-        .filter_map(|&b| if b > 0 { Some(b as char) } else { None })
-        .collect()
-}
-
-fn format_word(word: ContextWord) -> String {
-    word.chars
-        .iter()
-        .filter_map(|&b| if b > 0 { Some(b as char) } else { None })
-        .collect()
-}
-
-pub fn max_features() -> usize {
-    14
-}
-
-pub fn bias() -> String {
-    "bias".to_string()
-}
-
-pub fn suffix(suffix: ContextSuffix) -> String {
-    format!("i suffix {}", format_context_suffix(suffix))
-}
-
-pub fn pref1(c: u8) -> String {
-    format!("i pref1 {}", c as char)
-}
-
-pub fn iminus1tag(pos: POS) -> String {
-    let tag: &str = pos.into();
-    format!("i-1 tag {}", tag)
-}
-
-pub fn iminus2tag(pos: POS) -> String {
-    let tag: &str = pos.into();
-    format!("i-2 tag {}", tag)
-}
-
-pub fn itagplusiminus2tag(pos1: POS, pos2: POS) -> String {
-    let tag1: &str = pos1.into();
-    let tag2: &str = pos2.into();
-    format!("i tag+i-2 tag {} {}", tag1, tag2)
-}
-
-pub fn iword(word: ContextWord) -> String {
-    format!("i word {}", format_word(word))
-}
-
-pub fn iminus1tagplusiword(pos: POS, word: ContextWord) -> String {
-    let tag: &str = pos.into();
-    format!("i-1 tag+i word {} {}", tag, format_word(word))
-}
-
-pub fn iminus1word(word: ContextWord) -> String {
-    format!("i-1 word {}", format_word(word))
-}
-
-pub fn iminus1suffix(suffix: ContextSuffix) -> String {
-    format!("i-1 suffix {}", format_context_suffix(suffix))
-}
-
-pub fn iminus2word(word: ContextWord) -> String {
-    format!("i-2 word {}", format_word(word))
-}
-
-pub fn iplus1word(word: ContextWord) -> String {
-    format!("i+1 word {}", format_word(word))
-}
-
-pub fn iplus1suffix(suffix: ContextSuffix) -> String {
-    format!("i+1 suffix {}", format_context_suffix(suffix))
-}
-
-pub fn iplus2word(word: ContextWord) -> String {
-    format!("i+2 word {}", format_word(word))
-}
-
 /// A range of weights in the model
 ///
 /// This is equivalent to a `Range<usize>` but with `u32` instead of `usize` to
@@ -596,7 +424,7 @@ pub struct Model {
     static_tags: FxHashMap<String, POS>,
 
     weights: Vec<(POS, f32)>,
-    mapping: FxHashMap<String, WeightRange>,
+    mapping: FxHashMap<Feature, WeightRange>,
     initial_scores: Scores,
 }
 
@@ -608,7 +436,7 @@ impl Model {
     pub fn new(
         static_tags: FxHashMap<String, POS>,
         weights: Vec<(POS, f32)>,
-        mapping: FxHashMap<String, WeightRange>,
+        mapping: FxHashMap<Feature, WeightRange>,
         initial_scores: Scores,
     ) -> Self {
         Model {
@@ -630,7 +458,7 @@ impl Model {
     }
 
     /// Get the weights for a feature
-    pub fn get_feature(&self, feature: &str) -> Option<&[(POS, f32)]> {
+    pub fn get(&self, feature: &Feature) -> Option<&[(POS, f32)]> {
         let range = self.mapping.get(feature)?;
         self.weights.get(range.as_range())
     }

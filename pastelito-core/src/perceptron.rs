@@ -1,4 +1,5 @@
-use pastelito_data::{ContextWord, Model, Scores, POS};
+use pastelito_data::{ContextWord, Feature, Model, Scores, POS};
+use strum::EnumCount as _;
 use tracing::debug_span;
 
 use crate::block::{Block, Word};
@@ -92,47 +93,47 @@ impl Perceptron {
         p2: POS,
     ) -> POS {
         let context_index = word_index + 2;
-        let mut features = Vec::with_capacity(pastelito_data::max_features());
+        let mut features = Vec::with_capacity(Feature::COUNT);
 
-        features.push(pastelito_data::bias());
+        features.push(Feature::Bias);
 
         if let Ok(suffix) = token.try_into() {
-            features.push(pastelito_data::suffix(suffix));
+            features.push(Feature::Suffix(suffix));
         }
         if let Some(c) = token.chars().next().unwrap().as_ascii() {
-            features.push(pastelito_data::pref1(c.to_u8()));
+            features.push(Feature::Pref1(c.to_u8()));
         }
-        features.push(pastelito_data::iminus1tag(p1));
-        features.push(pastelito_data::iminus2tag(p2));
-        features.push(pastelito_data::itagplusiminus2tag(p1, p2));
+        features.push(Feature::IMinus1Tag(p1));
+        features.push(Feature::IMinus2Tag(p2));
+        features.push(Feature::ITagPlusIMinus2Tag(p1, p2));
 
         if let Some(word) = context.word(context_index) {
-            features.push(pastelito_data::iword(word));
-            features.push(pastelito_data::iminus1tagplusiword(p1, word));
+            features.push(Feature::IWord(word));
+            features.push(Feature::IMinus1TagPlusIWord(p1, word));
         }
 
         if let Some(word) = context.word(context_index - 1) {
-            features.push(pastelito_data::iminus1word(word));
-            features.push(pastelito_data::iminus1suffix(word.suffix()));
+            features.push(Feature::IMinus1Word(word));
+            features.push(Feature::IMinus1Suffix(word.suffix()));
         }
 
         if let Some(word) = context.word(context_index - 2) {
-            features.push(pastelito_data::iminus2word(word));
+            features.push(Feature::IMinus2Word(word));
         }
 
         if let Some(word) = context.word(context_index + 1) {
-            features.push(pastelito_data::iplus1word(word));
-            features.push(pastelito_data::iplus1suffix(word.suffix()));
+            features.push(Feature::IPlus1Word(word));
+            features.push(Feature::IPlus1Suffix(word.suffix()));
         }
 
         if let Some(word) = context.word(context_index + 2) {
-            features.push(pastelito_data::iplus2word(word));
+            features.push(Feature::IPlus2Word(word));
         }
 
         let mut scores = Scores::default();
 
         for feature in features {
-            if let Some(weights) = self.model.get_feature(&feature) {
+            if let Some(weights) = self.model.get(&feature) {
                 for (pos, weight) in weights {
                     scores.update(*pos, *weight);
                 }

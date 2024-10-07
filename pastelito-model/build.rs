@@ -1,5 +1,5 @@
 use fxhash::FxHashMap;
-use pastelito_data::{Model, Scores, WeightRange, POS};
+use pastelito_data::{Feature, Model, Scores, WeightRange, POS};
 use serde_json::Value;
 use speedy::Writable as _;
 use std::path::PathBuf;
@@ -76,14 +76,14 @@ fn read_static_tags() -> FxHashMap<String, POS> {
 fn generate_model() {
     let static_tags = read_static_tags();
 
-    let mut weight_mapping: FxHashMap<String, WeightRange> = FxHashMap::default();
+    let mut weight_mapping: FxHashMap<Feature, WeightRange> = FxHashMap::default();
 
     let weights = deserialize_weights(|key, weights| {
-        weight_mapping.insert(key, weights);
+        weight_mapping.insert(key.into(), weights);
     });
 
     let mut initial_scores = Scores::default();
-    let bias_range = weight_mapping.get("bias").unwrap();
+    let bias_range = weight_mapping.get(&Feature::Bias).unwrap();
     let bias_weights = &weights[bias_range.as_range()];
     for (pos, weight) in bias_weights {
         initial_scores.update(*pos, *weight);
