@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+fxhash = "0.2.1"
 speedy = "0.8.7"
 strum = { version = "0.26.3" }
 strum_macros = "0.26.4"

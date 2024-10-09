@@ -1,7 +1,7 @@
+use fxhash::FxHashMap;
 use pastelito_data::{Model, Scores, WeightRange, POS};
 use serde_json::Value;
 use speedy::Writable as _;
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr as _;
 use std::{env, fs::File, io::BufReader, path::Path};
@@ -52,8 +52,9 @@ where
     weights
 }
 
-fn read_static_tags() -> HashMap<String, POS> {
-    let json = input_json("tags.json");
+fn read_static_tags() -> FxHashMap<String, POS> {
+    let reader = input_file("tags.json");
+    let json: Value = serde_json::from_reader(reader).unwrap();
 
     let mut tags: Vec<(String, POS)> = match json {
         Value::Object(tags) => tags
@@ -69,13 +70,13 @@ fn read_static_tags() -> HashMap<String, POS> {
 
     tags.sort_by(|(k1, _), (k2, _)| k1.partial_cmp(k2).unwrap());
 
-    HashMap::from_iter(tags)
+    FxHashMap::from_iter(tags)
 }
 
 fn generate_model() {
     let static_tags = read_static_tags();
 
-    let mut weight_mapping: HashMap<String, WeightRange> = HashMap::new();
+    let mut weight_mapping: FxHashMap<String, WeightRange> = FxHashMap::default();
 
     let weights = deserialize_weights(|key, weights| {
         weight_mapping.insert(key, weights);

@@ -1,8 +1,9 @@
 //! Pastelito data structures.
 #![feature(ascii_char)]
+use fxhash::FxHashMap;
 use speedy::{Readable, Writable};
+use std::ops::Range;
 use std::str::FromStr;
-use std::{collections::HashMap, ops::Range};
 use strum::{EnumCount, IntoEnumIterator as _};
 use strum_macros::{EnumCount, EnumIter, EnumString, IntoStaticStr};
 
@@ -592,10 +593,10 @@ impl WeightRange {
 /// A model for the perceptron
 #[derive(Readable, Writable)]
 pub struct Model {
-    static_tags: HashMap<String, POS>,
+    static_tags: FxHashMap<String, POS>,
 
     weights: Vec<(POS, f32)>,
-    mapping: HashMap<String, WeightRange>,
+    mapping: FxHashMap<String, WeightRange>,
     initial_scores: Scores,
 }
 
@@ -605,9 +606,9 @@ impl Model {
     /// Users should typically use the model defined in `pastelito-model`
     /// instead of creating their own model.
     pub fn new(
-        static_tags: HashMap<String, POS>,
+        static_tags: FxHashMap<String, POS>,
         weights: Vec<(POS, f32)>,
-        mapping: HashMap<String, WeightRange>,
+        mapping: FxHashMap<String, WeightRange>,
         initial_scores: Scores,
     ) -> Self {
         Model {
