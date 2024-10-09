@@ -46,6 +46,34 @@ impl Context {
     }
 }
 
+/// The weights for a single word.
+struct WordWeights {
+    model: &'static Model,
+    weights: Vec<&'static [(POS, f32)]>,
+}
+
+impl WordWeights {
+    /// Create a new `WordWeights` for the given model and zero initial weights.
+    fn new(model: &'static Model) -> Self {
+        WordWeights {
+            model,
+            weights: Vec::with_capacity(Feature::COUNT),
+        }
+    }
+
+    /// Push the weights for the given feature into the weights vector.
+    fn push(&mut self, feature: &Feature) {
+        if let Some(weights) = self.model.get(feature) {
+            self.weights.push(weights);
+        }
+    }
+
+    /// Get the current weights of this word.
+    fn as_slice(&self) -> &[&'static [(POS, f32)]] {
+        &self.weights
+    }
+}
+
 /// A perceptron.
 pub struct Perceptron {
     model: &'static Model,
@@ -93,48 +121,46 @@ impl Perceptron {
         p2: POS,
     ) -> POS {
         let context_index = word_index + 2;
-        let mut features = Vec::with_capacity(Feature::COUNT);
+        let mut weights = WordWeights::new(self.model);
 
         if let Ok(suffix) = token.try_into() {
-            features.push(Feature::Suffix(suffix));
+            weights.push(&Feature::Suffix(suffix));
         }
         if let Some(c) = token.chars().next().unwrap().as_ascii() {
-            features.push(Feature::Pref1(c.to_u8()));
+            weights.push(&Feature::Pref1(c.to_u8()));
         }
-        features.push(Feature::IMinus1Tag(p1));
-        features.push(Feature::IMinus2Tag(p2));
-        features.push(Feature::ITagPlusIMinus2Tag(p1, p2));
+        weights.push(&Feature::IMinus1Tag(p1));
+        weights.push(&Feature::IMinus2Tag(p2));
+        weights.push(&Feature::ITagPlusIMinus2Tag(p1, p2));
 
         if let Some(word) = context.word(context_index) {
-            features.push(Feature::IWord(word));
-            features.push(Feature::IMinus1TagPlusIWord(p1, word));
+            weights.push(&Feature::IWord(word));
+            weights.push(&Feature::IMinus1TagPlusIWord(p1, word));
         }
 
         if let Some(word) = context.word(context_index - 1) {
-            features.push(Feature::IMinus1Word(word));
-            features.push(Feature::IMinus1Suffix(word.suffix()));
+            weights.push(&Feature::IMinus1Word(word));
+            weights.push(&Feature::IMinus1Suffix(word.suffix()));
         }
 
         if let Some(word) = context.word(context_index - 2) {
-            features.push(Feature::IMinus2Word(word));
+            weights.push(&Feature::IMinus2Word(word));
         }
 
         if let Some(word) = context.word(context_index + 1) {
-            features.push(Feature::IPlus1Word(word));
-            features.push(Feature::IPlus1Suffix(word.suffix()));
+            weights.push(&Feature::IPlus1Word(word));
+            weights.push(&Feature::IPlus1Suffix(word.suffix()));
         }
 
         if let Some(word) = context.word(context_index + 2) {
-            features.push(Feature::IPlus2Word(word));
+            weights.push(&Feature::IPlus2Word(word));
         }
 
         let mut scores = self.model.initial_scores();
 
-        for feature in features {
-            if let Some(weights) = self.model.get(&feature) {
-                for (pos, weight) in weights {
-                    scores.update(*pos, *weight);
-                }
+        for w in weights.as_slice() {
+            for (pos, weight) in *w {
+                scores.update(*pos, *weight);
             }
         }
 
