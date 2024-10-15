@@ -2,6 +2,7 @@
 #![feature(ascii_char_variants)]
 mod block;
 pub mod doc;
+pub mod lines;
 mod matcher;
 mod measures;
 pub mod parsers;

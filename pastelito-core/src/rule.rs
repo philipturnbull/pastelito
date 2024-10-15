@@ -9,6 +9,11 @@ use crate::{
     span::ByteSpan,
 };
 
+/// This structure has a `ByteSpan`.
+pub trait HasSpan {
+    fn span(&self) -> ByteSpan;
+}
+
 /// A single finding from a rule which indicates a possible error in the
 /// document.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -17,6 +22,12 @@ pub struct Warning {
     pub span: ByteSpan,
     /// The message associated with the warning.
     pub message: String,
+}
+
+impl HasSpan for Warning {
+    fn span(&self) -> ByteSpan {
+        self.span
+    }
 }
 
 /// A builder for `Warning`.
@@ -88,6 +99,28 @@ impl From<MeasureKey> for String {
     }
 }
 
+/// An instance of a measurement.
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Measurement {
+    /// The word that was measured.
+    pub word: Word,
+    /// The key for the measurement.
+    pub key: MeasureKey,
+}
+
+impl Measurement {
+    /// Create a new measurement.
+    fn new(key: MeasureKey, word: Word) -> Self {
+        Measurement { word, key }
+    }
+}
+
+impl HasSpan for Measurement {
+    fn span(&self) -> ByteSpan {
+        self.word.span
+    }
+}
+
 /// Build a set of measurements for a single document.
 #[derive(Debug, Default)]
 pub struct MeasurementsBuilder {
@@ -100,13 +133,17 @@ impl MeasurementsBuilder {
         self.measurements.entry(key).or_default().extend(words);
     }
 
-    fn build(self) -> Vec<(MeasureKey, Word)> {
+    fn build(self) -> Vec<Measurement> {
         let mut measurements = self
             .measurements
             .into_iter()
-            .flat_map(|(key, words)| words.into_iter().map(move |word| (key, word)))
+            .flat_map(|(key, words)| {
+                words
+                    .into_iter()
+                    .map(move |word| Measurement::new(key, word))
+            })
             .collect::<Vec<_>>();
-        measurements.sort_by(|a, b| (a.1, a.0).cmp(&(b.1, b.0)));
+        measurements.sort();
         measurements
     }
 }
@@ -132,7 +169,7 @@ impl ResultsBuilder {
 #[derive(Debug, Default)]
 pub struct Results {
     warnings: Vec<Warning>,
-    measurements: Vec<(MeasureKey, Word)>,
+    measurements: Vec<Measurement>,
 }
 
 impl Results {
@@ -146,7 +183,7 @@ impl Results {
     /// Iterate over the measurements.
     ///
     /// Measurements are ordered by the word in ascending order, and then by the `MeasureKey`.
-    pub fn iter_measurements(&self) -> impl Iterator<Item = &(MeasureKey, Word)> {
+    pub fn iter_measurements(&self) -> impl Iterator<Item = &Measurement> {
         self.measurements.iter()
     }
 
@@ -158,7 +195,7 @@ impl Results {
         self,
     ) -> (
         impl Iterator<Item = Warning>,
-        impl Iterator<Item = (MeasureKey, Word)>,
+        impl Iterator<Item = Measurement>,
     ) {
         (self.warnings.into_iter(), self.measurements.into_iter())
     }

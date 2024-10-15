@@ -1,7 +1,8 @@
+use pastelito_core::lines::spans_to_ranges;
+use pastelito_core::lines::LineCharRange;
 use pastelito_core::parsers::MarkdownParser;
 use pastelito_core::rule::Results;
 use pastelito_core::rule::RuleSet;
-use pastelito_core::ByteSpan;
 use pastelito_core::Document;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::notification::PublishDiagnostics;
@@ -20,54 +21,15 @@ pub struct Service {
     client: Client,
 }
 
-struct LineCounter {
-    line_num: usize,
-    last_span_start: usize,
-    start_char_offset_in_line: usize,
-}
+// Use a newtype wrapper to word around the orphan rule
+struct VscodeRange(Range);
 
-impl LineCounter {
-    fn new() -> Self {
-        LineCounter {
-            line_num: 0,
-            start_char_offset_in_line: 0,
-            last_span_start: 0,
-        }
-    }
-
-    fn span_to_range(&mut self, text: &str, span: ByteSpan) -> Range {
-        let start = span.start();
-        let end = span.end();
-
-        if start < self.last_span_start {
-            panic!("span out of order");
-        }
-
-        let (start_line_num, start_char_offset_in_line) = if start == self.last_span_start {
-            (self.line_num, self.start_char_offset_in_line)
-        } else {
-            self.line_num += text[self.last_span_start..start]
-                .chars()
-                .filter(|&c| c == '\n')
-                .count();
-            self.last_span_start = start;
-
-            self.start_char_offset_in_line = text[..start]
-                .chars()
-                .rev()
-                .take_while(|&c| c != '\n')
-                .count();
-
-            (self.line_num, self.start_char_offset_in_line)
-        };
-
-        let end_line_num = start_line_num + text[start..end].chars().filter(|&c| c == '\n').count();
-        let end_char_offset_in_line = text[..end].chars().rev().take_while(|&c| c != '\n').count();
-
-        Range {
-            start: Position::new(start_line_num as u32, start_char_offset_in_line as u32),
-            end: Position::new(end_line_num as u32, end_char_offset_in_line as u32),
-        }
+impl LineCharRange for VscodeRange {
+    fn new(start_line: u32, start_char: u32, end_line: u32, end_char: u32) -> Self {
+        Self(Range {
+            start: Position::new(start_line, start_char),
+            end: Position::new(end_line, end_char),
+        })
     }
 }
 
@@ -79,30 +41,28 @@ fn rule_results_to_diagnostics(text: &str, results: Results) -> Vec<Diagnostic> 
 
     let (warnings, measurements) = results.into_iter_both();
 
-    let mut counter = LineCounter::new();
-    diagnostics.extend(warnings.map(|result| {
-        let range = counter.span_to_range(text, result.span);
-        Diagnostic {
-            range,
-            severity: Some(DiagnosticSeverity::WARNING),
+    let warnings = spans_to_ranges(text, warnings);
+    diagnostics.extend(
+        warnings.map(|(range, result): (VscodeRange, _)| Diagnostic {
+            range: range.0,
+            severity: Some(DiagnosticSeverity::ERROR),
             source: source.clone(),
             message: result.message.to_owned(),
             ..Default::default()
-        }
-    }));
+        }),
+    );
 
-    let mut counter = LineCounter::new();
-    diagnostics.extend(measurements.map(|(key, word)| {
-        let range = counter.span_to_range(text, word.span);
-        Diagnostic {
-            range,
+    let measurements = spans_to_ranges(text, measurements);
+    diagnostics.extend(
+        measurements.map(|(range, measurement): (VscodeRange, _)| Diagnostic {
+            range: range.0,
             severity: Some(DiagnosticSeverity::HINT),
-            code: Some(NumberOrString::String(key.into())),
+            code: Some(NumberOrString::String(measurement.key.into())),
             source: source.clone(),
-            message: key.into(),
+            message: measurement.key.into(),
             ..Default::default()
-        }
-    }));
+        }),
+    );
 
     diagnostics
 }
