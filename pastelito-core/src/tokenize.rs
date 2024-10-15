@@ -40,7 +40,9 @@ impl Tokenizer {
 
         // Next, split off any contractions from the start of the remaining span.
         while let Some((prefix, contraction, suffix)) = Tokenizer::has_contraction(span) {
-            words.push(prefix.into());
+            if !prefix.is_empty() {
+                words.push(prefix.into());
+            }
             words.push(contraction.into());
             span = suffix;
         }
@@ -102,6 +104,13 @@ mod tests {
             .map(|(_, str)| str)
             .collect::<Vec<&str>>();
         assert_eq!(words, expected);
+    }
+
+    #[test]
+    fn test_just_contraction() {
+        let input = "n't";
+        let expected = vec!["n't"];
+        eq(input, expected);
     }
 
     #[test]
