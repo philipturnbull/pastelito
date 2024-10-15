@@ -142,7 +142,8 @@ impl Parser for MarkdownParser {
                     | Tag::TableCell
                     | Tag::DefinitionListTitle
                     | Tag::DefinitionListDefinition
-                    | Tag::BlockQuote(_) => {
+                    | Tag::BlockQuote(_)
+                    | Tag::FootnoteDefinition(_) => {
                         state.start_paragraph();
                     }
                     Tag::Heading { .. } => {
@@ -161,7 +162,8 @@ impl Parser for MarkdownParser {
                     | TagEnd::TableCell
                     | TagEnd::DefinitionListTitle
                     | TagEnd::DefinitionListDefinition
-                    | TagEnd::BlockQuote(_) => {
+                    | TagEnd::BlockQuote(_)
+                    | TagEnd::FootnoteDefinition => {
                         state.end_paragraph();
                     }
                     TagEnd::Heading { .. } => {
