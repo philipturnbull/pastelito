@@ -61,6 +61,11 @@ impl WordWeights {
         }
     }
 
+    /// Clear the current weights vector.
+    fn clear(&mut self) {
+        self.weights.clear();
+    }
+
     /// Push the weights for the given feature into the weights vector.
     fn push(&mut self, feature: &Feature) {
         if let Some(weights) = self.model.get(feature) {
@@ -91,6 +96,7 @@ impl Perceptron {
     /// in place.
     pub fn predict(&self, block: &mut Block<'_, Word>) {
         let context = Context::new(block);
+        let mut weights = WordWeights::new(self.model);
 
         let mut p1 = POS::Start;
         let mut p2 = POS::Start2;
@@ -99,7 +105,7 @@ impl Perceptron {
             let next_p1 = match word.pos {
                 None => {
                     // Only predict if the POS tag is currently unknown.
-                    let pos = self.predict_one(&context, i, str, p1, p2);
+                    let pos = self.predict_one(&mut weights, &context, i, str, p1, p2);
                     word.pos = Some(pos);
                     pos
                 }
@@ -114,6 +120,7 @@ impl Perceptron {
     /// Predict the POS tag for a single word.
     fn predict_one(
         &self,
+        weights: &mut WordWeights,
         context: &Context,
         word_index: usize,
         token: &str,
@@ -121,7 +128,7 @@ impl Perceptron {
         p2: POS,
     ) -> POS {
         let context_index = word_index + 2;
-        let mut weights = WordWeights::new(self.model);
+        weights.clear();
 
         if let Ok(suffix) = token.try_into() {
             weights.push(&Feature::Suffix(suffix));
