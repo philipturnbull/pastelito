@@ -18,31 +18,40 @@ impl Context {
     fn new(block: &Block<'_, Word>) -> Self {
         let context_span = debug_span!("create context");
         context_span.in_scope(|| {
-            let tokens = block
-                .iter_with_str()
-                .map(|(word, str)| ContextWord::new_from_word(str, word.pos))
+            let tokens = [Some(ContextWord::START2), Some(ContextWord::START)]
+                .into_iter()
+                .chain(
+                    block
+                        .iter_with_str()
+                        .map(|(word, str)| ContextWord::new_from_word(str, word.pos)),
+                )
+                .chain([Some(ContextWord::END), Some(ContextWord::END2)])
                 .collect::<Vec<_>>();
             Context { tokens }
         })
     }
 
-    /// Get the `ContextWord` for the given index.
-    fn word(&self, context_index: usize) -> Option<ContextWord> {
-        let num_tokens = self.tokens.len();
-
-        if context_index == 0 {
-            return Some(ContextWord::START2);
-        } else if context_index == 1 {
-            return Some(ContextWord::START);
-        }
-
-        if context_index == num_tokens + 2 {
-            Some(ContextWord::END)
-        } else if context_index == num_tokens + 3 {
-            Some(ContextWord::END2)
-        } else {
-            self.tokens[context_index - 2]
-        }
+    /// Get the context window around the given word index.
+    ///
+    /// This includes the two words before and after the given index.
+    #[allow(clippy::type_complexity)]
+    fn window(
+        &self,
+        i: usize,
+    ) -> (
+        Option<ContextWord>,
+        Option<ContextWord>,
+        Option<ContextWord>,
+        Option<ContextWord>,
+        Option<ContextWord>,
+    ) {
+        (
+            self.tokens[i - 2],
+            self.tokens[i - 1],
+            self.tokens[i],
+            self.tokens[i + 1],
+            self.tokens[i + 2],
+        )
     }
 }
 
@@ -127,7 +136,6 @@ impl Perceptron {
         p1: POS,
         p2: POS,
     ) -> POS {
-        let context_index = word_index + 2;
         weights.clear();
 
         if let Ok(suffix) = token.try_into() {
@@ -140,26 +148,28 @@ impl Perceptron {
         weights.push(&Feature::IMinus2Tag(p2));
         weights.push(&Feature::ITagPlusIMinus2Tag(p1, p2));
 
-        if let Some(word) = context.word(context_index) {
-            weights.push(&Feature::IWord(word));
-            weights.push(&Feature::IMinus1TagPlusIWord(p1, word));
+        let (minus2, minus1, current, plus1, plus2) = context.window(word_index + 2);
+
+        if let Some(word) = minus2 {
+            weights.push(&Feature::IMinus2Word(word));
         }
 
-        if let Some(word) = context.word(context_index - 1) {
+        if let Some(word) = minus1 {
             weights.push(&Feature::IMinus1Word(word));
             weights.push(&Feature::IMinus1Suffix(word.suffix()));
         }
 
-        if let Some(word) = context.word(context_index - 2) {
-            weights.push(&Feature::IMinus2Word(word));
+        if let Some(word) = current {
+            weights.push(&Feature::IWord(word));
+            weights.push(&Feature::IMinus1TagPlusIWord(p1, word));
         }
 
-        if let Some(word) = context.word(context_index + 1) {
+        if let Some(word) = plus1 {
             weights.push(&Feature::IPlus1Word(word));
             weights.push(&Feature::IPlus1Suffix(word.suffix()));
         }
 
-        if let Some(word) = context.word(context_index + 2) {
+        if let Some(word) = plus2 {
             weights.push(&Feature::IPlus2Word(word));
         }
 
