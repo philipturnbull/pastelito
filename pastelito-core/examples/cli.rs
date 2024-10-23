@@ -6,13 +6,19 @@ use std::io::Read;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
 
-#[derive(Parser, Debug)]
+/// Example CLI for pastelito-core
+#[derive(Parser)]
 struct Args {
+    /// Enable tracing debug output
     #[clap(long)]
     debug: bool,
 
+    /// Do not print results
     #[clap(long)]
     quiet: bool,
+
+    /// Input filename. If not provided, read from stdin
+    filename: Option<std::path::PathBuf>,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,8 +33,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         tracing::subscriber::set_global_default(subscriber)?;
     }
 
-    let mut input = String::new();
-    let _ = std::io::stdin().read_to_string(&mut input);
+    let input = match args.filename {
+        Some(filename) => std::fs::read_to_string(filename)?,
+        None => {
+            let mut input = String::new();
+            std::io::stdin().read_to_string(&mut input)?;
+            input
+        }
+    };
 
     let ruleset = RuleSet::default();
 
