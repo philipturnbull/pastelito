@@ -204,7 +204,7 @@ impl<'a> Results<'a> {
 }
 
 /// A rule that finds warnings in a document.
-pub trait Rule: Send {
+pub trait Rule: Send + Sync {
     /// Apply the rule to the document, adding zero or more warnings to the builder.
     fn apply(&self, doc: &Document, warnings: &mut WarningsBuilder);
 }
@@ -222,7 +222,7 @@ pub trait MatcherRule: Send {
     fn on_match(words: &[Word], warnings: &mut WarningsBuilder);
 }
 
-impl<U: MatcherRule> Rule for U {
+impl<U: MatcherRule + Sync> Rule for U {
     /// Run the `matcher` on each block in the document, and call `on_match` for
     /// each match.
     fn apply(&self, doc: &Document, warnings: &mut WarningsBuilder) {
@@ -301,7 +301,8 @@ impl RuleSet {
 
 impl Default for RuleSet {
     fn default() -> Self {
-        RuleSet::new(default_rules(), default_measures())
+        let default_span = debug_span!("RuleSet::default");
+        default_span.in_scope(|| RuleSet::new(default_rules(), default_measures()))
     }
 }
 

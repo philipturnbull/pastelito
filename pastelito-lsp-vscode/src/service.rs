@@ -19,6 +19,7 @@ use tracing::{debug_span, event, Level};
 
 pub struct Service {
     client: Client,
+    ruleset: RuleSet,
 }
 
 // Use a newtype wrapper to word around the orphan rule
@@ -69,7 +70,10 @@ fn rule_results_to_diagnostics(text: &str, results: Results) -> Vec<Diagnostic> 
 
 impl Service {
     pub fn new(client: Client) -> Self {
-        Service { client }
+        Service {
+            client,
+            ruleset: RuleSet::default(),
+        }
     }
 
     fn generate_publish_diagnostics_params(
@@ -79,14 +83,11 @@ impl Service {
     ) -> PublishDiagnosticsParams {
         let generate_span = debug_span!("generate_publish_diagnostics_params");
         let diagnostics = generate_span.in_scope(|| {
-            let ruleset_span = debug_span!("default_ruleset");
-            let ruleset = ruleset_span.in_scope(RuleSet::default);
-
             let doc_span = debug_span!("Document::new");
             let doc = doc_span.in_scope(|| Document::new(&MarkdownParser::default(), text));
 
             let results_span = debug_span!("ruleset.apply");
-            let results = results_span.in_scope(|| ruleset.apply(&doc));
+            let results = results_span.in_scope(|| self.ruleset.apply(&doc));
 
             let diagnostics_span = debug_span!("rule_results_to_diagnostics");
             diagnostics_span.in_scope(|| rule_results_to_diagnostics(text, results))
