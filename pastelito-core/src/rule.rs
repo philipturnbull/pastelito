@@ -31,18 +31,18 @@ impl HasSpan for Warning {
 }
 
 /// A builder for `Warning`.
-pub struct WarningBuilder<'a> {
-    words: &'a [Word],
+pub struct WarningBuilder {
+    span: ByteSpan,
     message: Option<String>,
 }
 
-impl<'a> WarningBuilder<'a> {
+impl WarningBuilder {
     /// Create a new builder for the given words.
     ///
     /// The span of the final `Warning` will be the span covering all the words.
-    pub fn new(words: &'a [Word]) -> Self {
+    pub fn new(words: &[Word]) -> Self {
         WarningBuilder {
-            words,
+            span: words.into(),
             message: None,
         }
     }
@@ -58,7 +58,7 @@ impl<'a> WarningBuilder<'a> {
     /// Build the `Warning`.
     pub fn build(self) -> Warning {
         Warning {
-            span: self.words.into(),
+            span: self.span,
             message: self.message.expect("message is required"),
         }
     }
@@ -101,39 +101,39 @@ impl From<MeasureKey> for String {
 
 /// An instance of a measurement.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Measurement {
+pub struct Measurement<'a> {
     /// The word that was measured.
-    pub word: Word,
+    pub word: Word<'a>,
     /// The key for the measurement.
     pub key: MeasureKey,
 }
 
-impl Measurement {
+impl<'a> Measurement<'a> {
     /// Create a new measurement.
-    fn new(key: MeasureKey, word: Word) -> Self {
+    fn new(key: MeasureKey, word: Word<'a>) -> Self {
         Measurement { word, key }
     }
 }
 
-impl HasSpan for Measurement {
+impl HasSpan for Measurement<'_> {
     fn span(&self) -> ByteSpan {
-        self.word.span
+        self.word.as_span()
     }
 }
 
 /// Build a set of measurements for a single document.
 #[derive(Debug, Default)]
-pub struct MeasurementsBuilder {
-    measurements: HashMap<MeasureKey, Vec<Word>>,
+pub struct MeasurementsBuilder<'a> {
+    measurements: HashMap<MeasureKey, Vec<Word<'a>>>,
 }
 
-impl MeasurementsBuilder {
+impl<'a> MeasurementsBuilder<'a> {
     /// Add a new measurement to the builder.
-    pub fn add_measurement(&mut self, key: MeasureKey, words: &[Word]) {
+    pub fn add_measurement(&mut self, key: MeasureKey, words: &[Word<'a>]) {
         self.measurements.entry(key).or_default().extend(words);
     }
 
-    fn build(self) -> Vec<Measurement> {
+    fn build(self) -> Vec<Measurement<'a>> {
         let mut measurements = self
             .measurements
             .into_iter()
@@ -150,14 +150,14 @@ impl MeasurementsBuilder {
 
 /// A builder for `Results`.
 #[derive(Debug, Default)]
-struct ResultsBuilder {
+struct ResultsBuilder<'a> {
     warnings_builder: WarningsBuilder,
-    measurements_builder: MeasurementsBuilder,
+    measurements_builder: MeasurementsBuilder<'a>,
 }
 
-impl ResultsBuilder {
+impl<'a> ResultsBuilder<'a> {
     /// Build the `Results`.
-    fn build(self) -> Results {
+    fn build(self) -> Results<'a> {
         Results {
             warnings: self.warnings_builder.build(),
             measurements: self.measurements_builder.build(),
@@ -167,12 +167,12 @@ impl ResultsBuilder {
 
 /// The results of applying rules and measures to a document.
 #[derive(Debug, Default)]
-pub struct Results {
+pub struct Results<'a> {
     warnings: Vec<Warning>,
-    measurements: Vec<Measurement>,
+    measurements: Vec<Measurement<'a>>,
 }
 
-impl Results {
+impl<'a> Results<'a> {
     /// Iterate over the warnings.
     ///
     /// Warnings are ordered by their span in ascending order.
@@ -195,7 +195,7 @@ impl Results {
         self,
     ) -> (
         impl Iterator<Item = Warning>,
-        impl Iterator<Item = Measurement>,
+        impl Iterator<Item = Measurement<'a>>,
     ) {
         (self.warnings.into_iter(), self.measurements.into_iter())
     }
@@ -237,7 +237,7 @@ impl<U: MatcherRule> Rule for U {
 pub trait Measure {
     /// Apply the measure to the document, adding zero or more measurements to
     /// the builder.
-    fn apply(&self, doc: &Document, measurements: &mut MeasurementsBuilder);
+    fn apply<'a>(&self, doc: &Document<'a>, measurements: &mut MeasurementsBuilder<'a>);
 }
 
 /// A measure that searches for a specific pattern, using a `SingleWordPattern`.
@@ -252,7 +252,7 @@ pub trait PatternMeasure {
 impl<U: PatternMeasure> Measure for U {
     /// Run the `pattern` on each block in the document, and call `on_match` for
     /// each match.
-    fn apply(&self, doc: &Document, measurements: &mut MeasurementsBuilder) {
+    fn apply<'a>(&self, doc: &Document<'a>, measurements: &mut MeasurementsBuilder<'a>) {
         let pattern = Self::pattern();
         let key = Self::key();
         for block in doc.iter() {
@@ -276,7 +276,7 @@ impl RuleSet {
     }
 
     /// Apply the rules and measures to the document, returning the results.
-    pub fn apply(&self, doc: &Document) -> Results {
+    pub fn apply<'a>(&self, doc: &Document<'a>) -> Results<'a> {
         let mut results = ResultsBuilder::default();
 
         for rule in &self.rules {

@@ -15,15 +15,15 @@ struct Context {
 
 impl Context {
     /// Create a new `Context` from the given block.
-    fn new(block: &Block<'_, Word>) -> Self {
+    fn new(block: &Block<Word>) -> Self {
         let context_span = debug_span!("create context");
         context_span.in_scope(|| {
             let tokens = [Some(ContextWord::START2), Some(ContextWord::START)]
                 .into_iter()
                 .chain(
                     block
-                        .iter_with_str()
-                        .map(|(word, str)| ContextWord::new_from_word(str, word.pos)),
+                        .iter()
+                        .map(|word| ContextWord::new_from_word(word.as_str(), word.pos())),
                 )
                 .chain([Some(ContextWord::END), Some(ContextWord::END2)])
                 .collect::<Vec<_>>();
@@ -103,19 +103,19 @@ impl Perceptron {
     ///
     /// This should be run after the "static tags" phase. The words are modified
     /// in place.
-    pub fn predict(&self, block: &mut Block<'_, Word>) {
+    pub fn predict(&self, block: &mut Block<Word>) {
         let context = Context::new(block);
         let mut weights = WordWeights::new(self.model);
 
         let mut p1 = POS::Start;
         let mut p2 = POS::Start2;
 
-        for (i, (word, str)) in block.iter_mut_with_str().enumerate() {
-            let next_p1 = match word.pos {
+        for (i, word) in block.iter_mut().enumerate() {
+            let next_p1 = match word.pos() {
                 None => {
                     // Only predict if the POS tag is currently unknown.
-                    let pos = self.predict_one(&mut weights, &context, i, str, p1, p2);
-                    word.pos = Some(pos);
+                    let pos = self.predict_one(&mut weights, &context, i, word.as_str(), p1, p2);
+                    word.set_pos(pos);
                     pos
                 }
                 Some(pos) => pos,

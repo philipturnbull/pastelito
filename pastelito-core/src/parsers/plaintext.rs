@@ -27,7 +27,7 @@ impl Default for PlaintextParser {
 }
 
 impl Parser for PlaintextParser {
-    fn parse<'a>(&self, data: &'a str) -> Vec<Block<'a, Word>> {
+    fn parse<'a>(&self, data: &'a str) -> Vec<Block<Word<'a>>> {
         let mut blocks = Vec::new();
         let mut span = FullByteSpan::of_document(data);
 
@@ -36,16 +36,16 @@ impl Parser for PlaintextParser {
                 Some((prefix, _, suffix)) => {
                     let prefix = prefix.skip_while(|c| c.is_whitespace());
                     if !prefix.is_empty() {
-                        let block = Block::singleton(BlockKind::Paragraph, data, prefix.as_span());
-                        blocks.push(self.tokenizer.tokenize(block));
+                        let block = Block::singleton(BlockKind::Paragraph, prefix.as_span());
+                        blocks.push(self.tokenizer.tokenize(data, block));
                     }
                     span = suffix;
                 }
                 None => {
                     let prefix = span.skip_while(|c| c.is_whitespace());
                     if !prefix.is_empty() {
-                        let block = Block::singleton(BlockKind::Paragraph, data, prefix.as_span());
-                        blocks.push(self.tokenizer.tokenize(block));
+                        let block = Block::singleton(BlockKind::Paragraph, prefix.as_span());
+                        blocks.push(self.tokenizer.tokenize(data, block));
                     }
                     break;
                 }
@@ -70,10 +70,7 @@ mod tests {
             .map(|block| {
                 (
                     block.kind(),
-                    block
-                        .iter_with_str()
-                        .map(|(_, str)| str)
-                        .collect::<Vec<_>>(),
+                    block.iter().map(|word| word.as_str()).collect::<Vec<_>>(),
                 )
             })
             .collect();

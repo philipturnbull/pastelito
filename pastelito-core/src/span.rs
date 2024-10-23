@@ -1,6 +1,6 @@
-use std::ops::Range;
+use std::{ops::Range, str::SplitWhitespace};
 
-use crate::block::Word;
+use crate::Word;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Ord, PartialOrd)]
 struct ByteOffset(usize);
@@ -148,7 +148,7 @@ impl<'a> FullByteSpan<'a> {
     }
 
     /// Get the string representation of this span.
-    pub fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &'a str {
         self.span.as_str(self.data)
     }
 
@@ -269,14 +269,26 @@ impl<'a> FullByteSpan<'a> {
     }
 
     /// Split this span into whitespace-separated parts.
-    pub fn split_whitespace(&'a self) -> impl Iterator<Item = FullByteSpan<'a>> {
-        let data_ptr = self.data.as_ptr() as usize;
+    pub fn split_whitespace<'b>(&'b self) -> impl Iterator<Item = FullByteSpan<'a>> + use<'a, 'b> {
+        SplitWhitespaceIterator {
+            data: self.data,
+            sw: self.as_str().split_whitespace(),
+        }
+    }
+}
 
-        self.as_str().split_whitespace().map(move |s| {
-            let start = s.as_ptr() as usize - data_ptr;
-            let end = start + s.len();
-            FullByteSpan::new(self.data, ByteOffset(start), ByteOffset(end))
-        })
+struct SplitWhitespaceIterator<'a, 'b> {
+    data: &'a str,
+    sw: SplitWhitespace<'b>,
+}
+
+impl<'a> Iterator for SplitWhitespaceIterator<'a, '_> {
+    type Item = FullByteSpan<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.sw
+            .next()
+            .map(|s| FullByteSpan::of_span(self.data, ByteSpan::new_in_str(self.data, s)))
     }
 }
 
@@ -292,11 +304,14 @@ impl<'a> From<FullByteSpan<'a>> for (&'a str, ByteSpan) {
     }
 }
 
-impl From<&[Word]> for ByteSpan {
-    fn from(words: &[Word]) -> Self {
+impl<'a> From<&[Word<'a>]> for ByteSpan {
+    fn from(words: &[Word<'a>]) -> Self {
+        let first = words.first().unwrap();
+        let last = words.last().unwrap();
+
         ByteSpan::new(
-            words.first().unwrap().span.start,
-            words.last().unwrap().span.end,
+            ByteOffset(first.as_offset()),
+            ByteOffset(last.as_offset() + last.as_str().len()),
         )
     }
 }

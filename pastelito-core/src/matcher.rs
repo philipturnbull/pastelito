@@ -9,7 +9,7 @@ pub trait SingleWordPattern: Copy {
     /// Check if the pattern matches the given word.
     ///
     /// `data` is the underlying data of the document, not the word itself.
-    fn matches_word(&self, data: &str, word: &Word) -> bool;
+    fn matches_word(&self, word: &Word) -> bool;
 }
 
 /// A pattern that matches multiple words.
@@ -22,7 +22,7 @@ pub trait MultipleWordPattern: Copy {
     /// `data` is the underlying data of the document. `matched_words` is the
     /// list of words that have been matched so far. If this pattern matches,
     /// then the function should push the matched words to this list.
-    fn matches(&self, data: &str, matched_words: &mut Vec<Word>, words: &[Word]) -> Option<usize>;
+    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize>;
 }
 
 /// A pattern that matches words based on their part of speech.
@@ -30,8 +30,8 @@ pub trait MultipleWordPattern: Copy {
 pub struct PosFn(pub fn(POS) -> bool);
 
 impl SingleWordPattern for PosFn {
-    fn matches_word(&self, _data: &str, word: &Word) -> bool {
-        match word.pos {
+    fn matches_word(&self, word: &Word) -> bool {
+        match word.pos() {
             Some(pos) => self.0(pos),
             None => false,
         }
@@ -43,8 +43,8 @@ impl SingleWordPattern for PosFn {
 pub struct StrFn(pub fn(&str) -> bool);
 
 impl SingleWordPattern for StrFn {
-    fn matches_word(&self, data: &str, word: &Word) -> bool {
-        self.0(word.span.as_str(data))
+    fn matches_word(&self, word: &Word) -> bool {
+        self.0(word.as_str())
     }
 }
 
@@ -53,8 +53,8 @@ impl SingleWordPattern for StrFn {
 pub struct Lowercase(pub &'static str);
 
 impl SingleWordPattern for Lowercase {
-    fn matches_word(&self, data: &str, word: &Word) -> bool {
-        let s = word.span.as_str(data);
+    fn matches_word(&self, word: &Word) -> bool {
+        let s = word.as_str();
 
         if s.len() == self.0.len() {
             s.chars()
@@ -72,9 +72,9 @@ impl<P: SingleWordPattern> MultipleWordPattern for P {
         1
     }
 
-    fn matches(&self, data: &str, matched_words: &mut Vec<Word>, words: &[Word]) -> Option<usize> {
+    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
         if let Some(word) = words.first() {
-            if self.matches_word(data, word) {
+            if self.matches_word(word) {
                 matched_words.push(*word);
                 return Some(1);
             }
@@ -85,14 +85,14 @@ impl<P: SingleWordPattern> MultipleWordPattern for P {
 }
 
 impl SingleWordPattern for POS {
-    fn matches_word(&self, _data: &str, word: &Word) -> bool {
-        word.pos == Some(*self)
+    fn matches_word(&self, word: &Word) -> bool {
+        word.pos() == Some(*self)
     }
 }
 
 impl SingleWordPattern for &str {
-    fn matches_word(&self, data: &str, word: &Word) -> bool {
-        word.span.as_str(data) == *self
+    fn matches_word(&self, word: &Word) -> bool {
+        word.as_str() == *self
     }
 }
 
@@ -102,10 +102,10 @@ impl<P0: MultipleWordPattern, P1: MultipleWordPattern> MultipleWordPattern for (
         self.0.size_hint() + self.1.size_hint()
     }
 
-    fn matches(&self, _data: &str, matched_words: &mut Vec<Word>, words: &[Word]) -> Option<usize> {
-        if let Some(next) = self.0.matches(_data, matched_words, words) {
+    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+        if let Some(next) = self.0.matches(matched_words, words) {
             let mut offset = next;
-            if let Some(next) = self.1.matches(_data, matched_words, &words[next..]) {
+            if let Some(next) = self.1.matches(matched_words, &words[next..]) {
                 offset += next;
                 return Some(offset);
             }
@@ -122,12 +122,12 @@ impl<P0: MultipleWordPattern, P1: MultipleWordPattern, P2: MultipleWordPattern> 
         self.0.size_hint() + self.1.size_hint() + self.2.size_hint()
     }
 
-    fn matches(&self, _data: &str, matched_words: &mut Vec<Word>, words: &[Word]) -> Option<usize> {
-        if let Some(next) = self.0.matches(_data, matched_words, words) {
+    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+        if let Some(next) = self.0.matches(matched_words, words) {
             let mut offset = next;
-            if let Some(next) = self.1.matches(_data, matched_words, &words[offset..]) {
+            if let Some(next) = self.1.matches(matched_words, &words[offset..]) {
                 offset += next;
-                if let Some(next) = self.2.matches(_data, matched_words, &words[offset..]) {
+                if let Some(next) = self.2.matches(matched_words, &words[offset..]) {
                     offset += next;
                     return Some(offset);
                 }
@@ -149,14 +149,14 @@ impl<
         self.0.size_hint() + self.1.size_hint() + self.2.size_hint() + self.3.size_hint()
     }
 
-    fn matches(&self, _data: &str, matched_words: &mut Vec<Word>, words: &[Word]) -> Option<usize> {
-        if let Some(next) = self.0.matches(_data, matched_words, words) {
+    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+        if let Some(next) = self.0.matches(matched_words, words) {
             let mut offset = next;
-            if let Some(next) = self.1.matches(_data, matched_words, &words[offset..]) {
+            if let Some(next) = self.1.matches(matched_words, &words[offset..]) {
                 offset += next;
-                if let Some(next) = self.2.matches(_data, matched_words, &words[offset..]) {
+                if let Some(next) = self.2.matches(matched_words, &words[offset..]) {
                     offset += next;
-                    if let Some(next) = self.3.matches(_data, matched_words, &words[offset..]) {
+                    if let Some(next) = self.3.matches(matched_words, &words[offset..]) {
                         offset += next;
                         return Some(offset);
                     }
@@ -172,7 +172,7 @@ impl<
 pub struct Any;
 
 impl SingleWordPattern for Any {
-    fn matches_word(&self, _data: &str, _word: &Word) -> bool {
+    fn matches_word(&self, _word: &Word) -> bool {
         true
     }
 }
@@ -182,8 +182,8 @@ impl SingleWordPattern for Any {
 pub struct OrS<L: SingleWordPattern, R: SingleWordPattern>(pub L, pub R);
 
 impl<L: SingleWordPattern, R: SingleWordPattern> SingleWordPattern for OrS<L, R> {
-    fn matches_word(&self, data: &str, word: &Word) -> bool {
-        self.0.matches_word(data, word) || self.1.matches_word(data, word)
+    fn matches_word(&self, word: &Word) -> bool {
+        self.0.matches_word(word) || self.1.matches_word(word)
     }
 }
 
@@ -195,12 +195,12 @@ impl<L: MultipleWordPattern, R: MultipleWordPattern> MultipleWordPattern for Or<
     fn size_hint(&self) -> usize {
         std::cmp::max(self.0.size_hint(), self.1.size_hint())
     }
-    fn matches(&self, data: &str, matched_words: &mut Vec<Word>, words: &[Word]) -> Option<usize> {
-        if let Some(next) = self.0.matches(data, matched_words, words) {
+    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+        if let Some(next) = self.0.matches(matched_words, words) {
             return Some(next);
         }
 
-        if let Some(next) = self.1.matches(data, matched_words, words) {
+        if let Some(next) = self.1.matches(matched_words, words) {
             return Some(next);
         }
 
@@ -213,8 +213,8 @@ impl<L: MultipleWordPattern, R: MultipleWordPattern> MultipleWordPattern for Or<
 pub struct AndS<L: SingleWordPattern, R: SingleWordPattern>(pub L, pub R);
 
 impl<L: SingleWordPattern, R: SingleWordPattern> SingleWordPattern for AndS<L, R> {
-    fn matches_word(&self, data: &str, word: &Word) -> bool {
-        self.0.matches_word(data, word) && self.1.matches_word(data, word)
+    fn matches_word(&self, word: &Word) -> bool {
+        self.0.matches_word(word) && self.1.matches_word(word)
     }
 }
 
@@ -223,10 +223,8 @@ impl<L: SingleWordPattern, R: SingleWordPattern> SingleWordPattern for AndS<L, R
 pub struct OneOfS<P, const N: usize>(pub [P; N]);
 
 impl<P: SingleWordPattern, const N: usize> SingleWordPattern for OneOfS<P, N> {
-    fn matches_word(&self, data: &str, word: &Word) -> bool {
-        self.0
-            .iter()
-            .any(|pattern| pattern.matches_word(data, word))
+    fn matches_word(&self, word: &Word) -> bool {
+        self.0.iter().any(|pattern| pattern.matches_word(word))
     }
 }
 
@@ -243,9 +241,9 @@ impl<P: MultipleWordPattern, const N: usize> MultipleWordPattern for OneOf<P, N>
             .unwrap_or(1)
     }
 
-    fn matches(&self, data: &str, matched_words: &mut Vec<Word>, words: &[Word]) -> Option<usize> {
+    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
         for pattern in self.0.iter() {
-            if let Some(next) = pattern.matches(data, matched_words, words) {
+            if let Some(next) = pattern.matches(matched_words, words) {
                 return Some(next);
             }
         }
@@ -263,8 +261,8 @@ impl<P: MultipleWordPattern> MultipleWordPattern for Opt<P> {
         self.0.size_hint()
     }
 
-    fn matches(&self, data: &str, matched_words: &mut Vec<Word>, words: &[Word]) -> Option<usize> {
-        if let Some(next) = self.0.matches(data, matched_words, words) {
+    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+        if let Some(next) = self.0.matches(matched_words, words) {
             return Some(next);
         }
 
@@ -322,11 +320,13 @@ impl<I: SingleWordPattern, P: MultipleWordPattern> Matcher for Ignore<I, P> {
 
 /// Find each sequence of words in `block` that match `pattern`, and call
 /// `on_match` with the matched words.
-pub fn match_words<M>(block: &Block<'_, Word>, matcher: M, mut on_match: impl FnMut(&[Word]))
-where
+pub fn match_words<'a, M>(
+    block: &Block<Word<'a>>,
+    matcher: M,
+    mut on_match: impl FnMut(&[Word<'a>]),
+) where
     M: Matcher,
 {
-    let data = block.data();
     let original_words = block.as_slice();
 
     let ignore_pattern = matcher.ignore_pattern();
@@ -336,7 +336,7 @@ where
         Some(ignore) => original_words
             .iter()
             .filter_map(|word| {
-                if ignore.matches_word(data, word) {
+                if ignore.matches_word(word) {
                     None
                 } else {
                     Some(*word)
@@ -360,10 +360,7 @@ where
     let mut matched_words = Vec::with_capacity(pattern.size_hint());
 
     for i in 0..words.len() {
-        if pattern
-            .matches(data, &mut matched_words, &words[i..])
-            .is_some()
-        {
+        if pattern.matches(&mut matched_words, &words[i..]).is_some() {
             on_match(&matched_words);
         }
 
@@ -400,10 +397,7 @@ mod tests {
             let mut matches: Vec<Vec<&str>> = Vec::new();
 
             match_words(&block, pattern, |words| {
-                let strings = words
-                    .iter()
-                    .map(|word| word.span.as_str(block.data()))
-                    .collect();
+                let strings = words.iter().map(|word| word.as_str()).collect();
                 matches.push(strings);
             });
 

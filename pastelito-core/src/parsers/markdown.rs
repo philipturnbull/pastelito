@@ -34,14 +34,14 @@ impl BlockBuilder {
         self.spans.is_empty()
     }
 
-    fn build(self, data: &str) -> Block<'_, ByteSpan> {
-        Block::new(self.kind, data, self.spans)
+    fn build(self) -> Block<ByteSpan> {
+        Block::new(self.kind, self.spans)
     }
 }
 
 struct ParseState<'a, 't> {
     data: &'a str,
-    blocks: Vec<Block<'a, Word>>,
+    blocks: Vec<Block<Word<'a>>>,
     stack: Vec<BlockBuilder>,
     tokenizer: &'t Tokenizer,
 }
@@ -76,7 +76,7 @@ impl<'a, 't> ParseState<'a, 't> {
         let block = self.stack.pop().expect("stack should not be empty");
         if !block.is_empty() {
             self.blocks
-                .push(self.tokenizer.tokenize(block.build(self.data)));
+                .push(self.tokenizer.tokenize(self.data, block.build()));
         }
     }
 
@@ -85,7 +85,7 @@ impl<'a, 't> ParseState<'a, 't> {
         block.spans.push(span);
     }
 
-    fn finish(self) -> Vec<Block<'a, Word>> {
+    fn finish(self) -> Vec<Block<Word<'a>>> {
         if self.stack.is_empty() {
             self.blocks
         } else {
@@ -113,7 +113,7 @@ impl Default for MarkdownParser {
 }
 
 impl Parser for MarkdownParser {
-    fn parse<'a>(&self, data: &'a str) -> Vec<Block<'a, Word>> {
+    fn parse<'a>(&self, data: &'a str) -> Vec<Block<Word<'a>>> {
         let parser = CmarkParser::new_ext(
             data,
             Options::ENABLE_TABLES
@@ -217,10 +217,7 @@ mod tests {
             .map(|block| {
                 (
                     block.kind(),
-                    block
-                        .iter_with_str()
-                        .map(|(_, str)| str)
-                        .collect::<Vec<_>>(),
+                    block.iter().map(|word| word.as_str()).collect::<Vec<_>>(),
                 )
             })
             .collect();

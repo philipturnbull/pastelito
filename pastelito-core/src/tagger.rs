@@ -24,7 +24,7 @@ impl Tagger {
     /// Tag the words in the given block.
     ///
     /// The words are modified in place.
-    pub fn tag(&self, block: &mut Block<'_, Word>) {
+    pub fn tag(&self, block: &mut Block<Word>) {
         // First, add any "static" tags based solely on the token. Some simple
         // words -- such as `on`, `whose`, `after`, etc -- always have the same
         // POS, so we can tag them immediately without looking at any
@@ -37,9 +37,11 @@ impl Tagger {
         self.perceptron.predict(block);
     }
 
-    fn add_static_tags(&self, block: &mut Block<'_, Word>) {
-        for (word, str) in block.iter_mut_with_str() {
-            word.pos = self.static_pos(str);
+    fn add_static_tags(&self, block: &mut Block<Word>) {
+        for word in block.iter_mut() {
+            if let Some(pos) = self.static_pos(word.as_str()) {
+                word.set_pos(pos);
+            }
         }
     }
 
@@ -73,7 +75,10 @@ impl Tagger {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{block::BlockKind, span::ByteSpan};
+    use crate::{
+        block::BlockKind,
+        span::{ByteSpan, FullByteSpan},
+    };
     use serde_json::Value;
     use std::{fs::File, str::FromStr as _};
 
@@ -81,10 +86,13 @@ mod tests {
         Block::with_testing_block(words, |block| {
             let mut unknown_block = Block::new(
                 block.kind(),
-                block.data(),
                 block
                     .iter()
-                    .map(|word| word.span.into())
+                    .map(|word| {
+                        let mut word = *word;
+                        word.clear_pos();
+                        word
+                    })
                     .collect::<Vec<_>>(),
             );
 
@@ -123,12 +131,12 @@ mod tests {
     }
     static BLOG_POST: &str = include_str!("../benches/data/leaving-rust-gamedev.md");
 
-    fn test_block() -> Block<'static, Word> {
-        let words: Vec<Word> = BLOG_POST
+    fn test_block() -> Block<Word<'static>> {
+        let words: Vec<Word<'static>> = BLOG_POST
             .split_whitespace()
-            .map(|s| ByteSpan::new_in_str(BLOG_POST, s).into())
+            .map(|s| FullByteSpan::of_span(BLOG_POST, ByteSpan::new_in_str(BLOG_POST, s)).into())
             .collect();
-        Block::new(BlockKind::Paragraph, BLOG_POST, words)
+        Block::new(BlockKind::Paragraph, words)
     }
 
     #[test]
@@ -148,7 +156,7 @@ mod tests {
             .zip(block_string_2.as_slice())
             .enumerate()
         {
-            assert_eq!(word_l.pos, word_r.pos, "i: {}", i);
+            assert_eq!(word_l.pos(), word_r.pos(), "i: {}", i);
         }
     }
 
@@ -169,7 +177,7 @@ mod tests {
             .zip(block_r.as_slice())
             .enumerate()
         {
-            assert_eq!(word_l.pos, word_r.pos, "i: {}", i);
+            assert_eq!(word_l.pos(), word_r.pos(), "i: {}", i);
         }
     }
 
@@ -179,10 +187,10 @@ mod tests {
         let tagger = Tagger::default();
         tagger.tag(&mut block);
 
-        let actual_tags = block
+        let actual_tags: Vec<POS> = block
             .as_slice()
             .iter()
-            .map(|word| word.pos.unwrap())
+            .map(|word| word.pos().unwrap())
             .collect::<Vec<_>>();
 
         // A simple VCR-like test
@@ -205,7 +213,7 @@ mod tests {
             Err(_) => None,
         };
 
-        let expected_tags = match expected_tags {
+        let expected_tags: Vec<POS> = match expected_tags {
             Some(expected_tags) => expected_tags,
             None => {
                 // If the file is missing, write the actual tags

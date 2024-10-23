@@ -8,29 +8,28 @@ pub struct Tokenizer {}
 
 impl Tokenizer {
     /// Tokenize the given block of `ByteSpan`s into a new block of `Word`s.
-    pub fn tokenize<'a>(&self, block: Block<'a, ByteSpan>) -> Block<'a, Word> {
-        let mut words = Vec::new();
+    pub fn tokenize<'a>(&self, data: &'a str, block: Block<ByteSpan>) -> Block<Word<'a>> {
+        let mut words: Vec<Word<'a>> = Vec::new();
 
         let kind = block.kind();
-        let data = block.data();
-        let tokens = block
-            .into_iter()
-            .map(|span| FullByteSpan::of_span(data, span));
 
-        for token in tokens {
+        for token in block
+            .into_iter()
+            .map(|span| FullByteSpan::<'a>::of_span(data, span))
+        {
             for token in token.split_whitespace() {
                 words.extend(self.split(token));
             }
         }
 
-        Block::new(kind, data, words)
+        Block::new(kind, words)
     }
 
     /// Split a single span into one or more words.
-    fn split(&self, mut span: FullByteSpan) -> impl IntoIterator<Item = Word> {
+    fn split<'a>(&self, mut span: FullByteSpan<'a>) -> impl IntoIterator<Item = Word<'a>> {
         // Most words are short, so we use a SmallVec to avoid heap allocations.
-        let mut words: SmallVec<[Word; 4]> = SmallVec::new();
-        let mut suffixes: SmallVec<[Word; 4]> = SmallVec::new();
+        let mut words: SmallVec<[Word<'a>; 4]> = SmallVec::new();
+        let mut suffixes: SmallVec<[Word<'a>; 4]> = SmallVec::new();
 
         // First, strip off any prefixes from the start of the span.
         while let Some((prefix, suffix)) = Tokenizer::has_prefix(span) {
@@ -94,14 +93,14 @@ mod tests {
 
     fn eq(data: &str, expected: Vec<&str>) {
         let span = FullByteSpan::of_document(data);
-        let block = Block::singleton(BlockKind::Paragraph, data, span.as_span());
+        let block = Block::singleton(BlockKind::Paragraph, span.as_span());
 
         let tokenizer = Tokenizer {};
-        let words = tokenizer.tokenize(block);
+        let words = tokenizer.tokenize(data, block);
 
         let words = words
-            .iter_with_str()
-            .map(|(_, str)| str)
+            .iter()
+            .map(|word| word.as_str())
             .collect::<Vec<&str>>();
         assert_eq!(words, expected);
     }
