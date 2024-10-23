@@ -1,6 +1,9 @@
 [package]
-name = "fuzz"
+name = "pastelito-fuzz"
 version = "0.0.0"
+authors = [
+  "Phil Turnbull"
+]
 publish = false
 edition = "2021"
 
