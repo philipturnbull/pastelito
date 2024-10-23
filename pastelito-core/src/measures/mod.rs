@@ -6,7 +6,7 @@ mod adjectives;
 mod be_verbs;
 mod prepositions;
 
-pub(crate) fn default_measures() -> Vec<Box<dyn Measure + Send>> {
+pub(crate) fn default_measures() -> Vec<Box<dyn Measure>> {
     vec![
         Box::new(abstract_nouns::AbstractNouns),
         Box::new(academic_ad_words::AcademicAdWords),

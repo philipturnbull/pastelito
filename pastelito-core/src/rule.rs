@@ -202,13 +202,13 @@ impl<'a> Results<'a> {
 }
 
 /// A rule that finds warnings in a document.
-pub trait Rule {
+pub trait Rule: Send {
     /// Apply the rule to the document, adding zero or more warnings to the builder.
     fn apply(&self, doc: &Document, warnings: &mut WarningsBuilder);
 }
 
 /// A rule that searches for warnings using a specific pattern, using a `Matcher`.
-pub trait MatcherRule {
+pub trait MatcherRule: Send {
     /// Get the matcher for this rule.
     fn matcher() -> impl Matcher;
 
@@ -265,13 +265,13 @@ impl<U: PatternMeasure> Measure for U {
 
 /// A set of rules and measures to apply to a document.
 pub struct RuleSet {
-    rules: Vec<Box<dyn Rule + Send>>,
-    measures: Vec<Box<dyn Measure + Send>>,
+    rules: Vec<Box<dyn Rule>>,
+    measures: Vec<Box<dyn Measure>>,
 }
 
 impl RuleSet {
     /// Create a new rule set with the given rules and masures.
-    pub fn new(rules: Vec<Box<dyn Rule + Send>>, measures: Vec<Box<dyn Measure + Send>>) -> Self {
+    pub fn new(rules: Vec<Box<dyn Rule>>, measures: Vec<Box<dyn Measure>>) -> Self {
         RuleSet { rules, measures }
     }
 
@@ -305,7 +305,7 @@ pub(crate) mod test {
         rule::{Measure, Rule, RuleSet},
     };
 
-    pub(crate) fn rule_eq<R: Rule + Send + 'static>(rule: R, data: &str, expected: usize) {
+    pub(crate) fn rule_eq<R: Rule + 'static>(rule: R, data: &str, expected: usize) {
         let doc = Document::new(&PlaintextParser::default(), data);
         let ruleset = RuleSet::new(vec![Box::new(rule)], Vec::new());
         let results = ruleset.apply(&doc);
@@ -319,7 +319,7 @@ pub(crate) mod test {
         );
     }
 
-    pub(crate) fn measure_eq<M: Measure + Send + 'static>(measure: M, data: &str, expected: usize) {
+    pub(crate) fn measure_eq<M: Measure + 'static>(measure: M, data: &str, expected: usize) {
         let doc = Document::new(&PlaintextParser::default(), data);
         let ruleset = RuleSet::new(Vec::new(), vec![Box::new(measure)]);
         let results = ruleset.apply(&doc);

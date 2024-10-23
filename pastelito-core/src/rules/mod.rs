@@ -6,7 +6,7 @@ mod repeated_words;
 mod weak_ing;
 mod weasel_words;
 
-pub(crate) fn default_rules() -> Vec<Box<dyn Rule + Send>> {
+pub(crate) fn default_rules() -> Vec<Box<dyn Rule>> {
     vec![
         Box::new(academic_we::AcademicWe),
         Box::new(passive_construction::PassiveConstruction),
