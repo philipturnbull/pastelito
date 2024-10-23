@@ -42,28 +42,34 @@ fn rule_results_to_diagnostics(text: &str, results: Results) -> Vec<Diagnostic> 
 
     let (warnings, measurements) = results.into_iter_both();
 
-    let warnings = spans_to_ranges(text, warnings);
-    diagnostics.extend(
-        warnings.map(|(range, result): (VscodeRange, _)| Diagnostic {
-            range: range.0,
-            severity: Some(DiagnosticSeverity::ERROR),
-            source: source.clone(),
-            message: result.message.to_owned(),
-            ..Default::default()
-        }),
-    );
+    let warnings_span = debug_span!("rule_results_to_diagnostics.warnings");
+    warnings_span.in_scope(|| {
+        let warnings = spans_to_ranges(text, warnings);
+        diagnostics.extend(
+            warnings.map(|(range, result): (VscodeRange, _)| Diagnostic {
+                range: range.0,
+                severity: Some(DiagnosticSeverity::ERROR),
+                source: source.clone(),
+                message: result.message.to_owned(),
+                ..Default::default()
+            }),
+        );
+    });
 
-    let measurements = spans_to_ranges(text, measurements);
-    diagnostics.extend(
-        measurements.map(|(range, measurement): (VscodeRange, _)| Diagnostic {
-            range: range.0,
-            severity: Some(DiagnosticSeverity::HINT),
-            code: Some(NumberOrString::String(measurement.key.into())),
-            source: source.clone(),
-            message: measurement.key.into(),
-            ..Default::default()
-        }),
-    );
+    let measurements_span = debug_span!("rule_results_to_diagnostics.measurements");
+    measurements_span.in_scope(|| {
+        let measurements = spans_to_ranges(text, measurements);
+        diagnostics.extend(
+            measurements.map(|(range, measurement): (VscodeRange, _)| Diagnostic {
+                range: range.0,
+                severity: Some(DiagnosticSeverity::HINT),
+                code: Some(NumberOrString::String(measurement.key.into())),
+                source: source.clone(),
+                message: measurement.key.into(),
+                ..Default::default()
+            }),
+        );
+    });
 
     diagnostics
 }
