@@ -1,7 +1,7 @@
 use pastelito_data::POS;
 
 use crate::{
-    matcher::{AndS, OrS, SingleWordPattern, StrFn},
+    matcher::{AndS, OrS, Regex, SingleWordPattern},
     rule::{MeasureKey, PatternMeasure},
 };
 
@@ -15,14 +15,7 @@ impl PatternMeasure for AcademicAdWords {
     fn pattern() -> impl SingleWordPattern {
         AndS(
             OrS(POS::Adjective, POS::Adverb),
-            StrFn(|word| {
-                let suffixes = [
-                    "able", "ac", "al", "ant", "ary", "ent", "ful", "ible", "ic", "ive", "less",
-                    "ous",
-                ];
-
-                suffixes.iter().any(|suffix| word.ends_with(suffix))
-            }),
+            Regex::new(r"(?i)\w(able|ac|al|ant|ary|ent|ful|ible|ic|ive|less|ous)$"),
         )
     }
 }

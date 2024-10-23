@@ -1,7 +1,7 @@
 use pastelito_data::POS;
 
 use crate::{
-    matcher::{AndS, Lowercase, Matcher, OneOfS},
+    matcher::{AndS, Matcher, Regex},
     rule::{MatcherRule, WarningBuilder, WarningsBuilder},
     Word,
 };
@@ -12,25 +12,7 @@ impl MatcherRule for WeaselWords {
     fn matcher() -> impl Matcher {
         AndS(
             POS::Adverb,
-            OneOfS([
-                Lowercase("absolutely"),
-                Lowercase("actually"),
-                Lowercase("basically"),
-                Lowercase("certainly"),
-                Lowercase("completely"),
-                Lowercase("definitely"),
-                Lowercase("easily"),
-                Lowercase("just"),
-                Lowercase("literally"),
-                Lowercase("probably"),
-                Lowercase("quite"),
-                Lowercase("rather"),
-                Lowercase("really"),
-                Lowercase("somehow"),
-                Lowercase("suddenly"),
-                Lowercase("totally"),
-                Lowercase("virtually"),
-            ]),
+            Regex::new("(?i)^(absolutely|actually|basically|certainly|completely|definitely|easily|just|literally|probably|quite|rather|really|somehow|suddenly|totally|virtually)$"),
         )
     }
 
@@ -52,5 +34,6 @@ mod tests {
     #[test]
     fn test() {
         rule_eq(WeaselWords, "It was quite complex.", 1);
+        rule_eq(WeaselWords, "Basically, it was blah.", 1);
     }
 }

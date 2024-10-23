@@ -11,6 +11,7 @@ speedy = "0.8.7"
 tracing = "0.1.40"
 pastelito-data = { path = "../pastelito-data" }
 pastelito-model = { path = "../pastelito-model" }
+regex = "1.11.0"
 strum = "0.26.3"
 
 [dev-dependencies]

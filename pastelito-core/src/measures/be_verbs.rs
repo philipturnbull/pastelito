@@ -1,5 +1,5 @@
 use crate::{
-    matcher::{OneOfS, SingleWordPattern},
+    matcher::{Regex, SingleWordPattern},
     rule::{MeasureKey, PatternMeasure},
 };
 
@@ -11,7 +11,7 @@ impl PatternMeasure for BeVerbs {
     }
 
     fn pattern() -> impl SingleWordPattern {
-        OneOfS(["am", "are", "be", "been", "being", "is", "was", "were"])
+        Regex::new(r"(?i)^(am|are|be|been|being|is|was|were)$")
     }
 }
 
@@ -26,5 +26,6 @@ mod tests {
         measure_eq(BeVerbs, "I am a person.", 1);
         measure_eq(BeVerbs, "You are a person.", 1);
         measure_eq(BeVerbs, "He is a person.", 1);
+        measure_eq(BeVerbs, "Is this true?", 1);
     }
 }

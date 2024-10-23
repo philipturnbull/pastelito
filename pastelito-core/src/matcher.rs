@@ -66,6 +66,23 @@ impl SingleWordPattern for Lowercase {
     }
 }
 
+/// A pattern that matches words using a regular expression.
+#[derive(Clone)]
+pub struct Regex(regex::Regex);
+
+impl Regex {
+    /// Create a new pattern from a regular expression.
+    pub fn new(regex: &str) -> Self {
+        Self(regex::Regex::new(regex).unwrap())
+    }
+}
+
+impl SingleWordPattern for Regex {
+    fn matches_word(&self, word: &Word) -> bool {
+        self.0.is_match(word.as_str())
+    }
+}
+
 /// All single word patterns are also multiple word patterns.
 impl<P: SingleWordPattern> MultipleWordPattern for P {
     fn size_hint(&self) -> usize {

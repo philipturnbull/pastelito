@@ -1,7 +1,7 @@
 use pastelito_data::POS;
 
 use crate::{
-    matcher::{AndS, OrS, SingleWordPattern, StrFn},
+    matcher::{AndS, OneOfS, Regex, SingleWordPattern},
     rule::{MeasureKey, PatternMeasure},
 };
 
@@ -14,20 +14,13 @@ impl PatternMeasure for AbstractNouns {
 
     fn pattern() -> impl SingleWordPattern {
         AndS(
-            OrS(POS::NounPlural, POS::NounSingularOrMass),
-            StrFn(|word| {
-                word.ends_with("ance")
-                    || word.ends_with("ence")
-                    || word.ends_with("ences")
-                    || (word.len() > 3 && word.ends_with("ion"))
-                    || (word.len() > 4 && word.ends_with("ions"))
-                    || word.ends_with("ism")
-                    || word.ends_with("isms")
-                    || word.ends_with("ment")
-                    || word.ends_with("ments")
-                    || word.ends_with("ty")
-                    || (word.len() > 4 && word.ends_with("ties"))
-            }),
+            OneOfS([
+                POS::NounPlural,
+                POS::NounSingularOrMass,
+                POS::ProperNounSingular,
+                POS::ProperNounPlural,
+            ]),
+            Regex::new(r"(?i)\w(ance|ence|ences|ion|ions|ism|isms|ment|ty|ties)$"),
         )
     }
 }
@@ -48,5 +41,6 @@ mod tests {
         measure_eq(AbstractNouns, "Your presence is important.", 1);
         measure_eq(AbstractNouns, "The identities were hidden.", 1);
         measure_eq(AbstractNouns, "The ties were hidden.", 0);
+        measure_eq(AbstractNouns, "Criticism is important.", 1);
     }
 }
