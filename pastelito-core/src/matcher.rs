@@ -120,6 +120,8 @@ impl<P0: MultipleWordPattern, P1: MultipleWordPattern> MultipleWordPattern for (
     }
 
     fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+        let original_len = matched_words.len();
+
         if let Some(next) = self.0.matches(matched_words, words) {
             let mut offset = next;
             if let Some(next) = self.1.matches(matched_words, &words[next..]) {
@@ -127,6 +129,8 @@ impl<P0: MultipleWordPattern, P1: MultipleWordPattern> MultipleWordPattern for (
                 return Some(offset);
             }
         }
+
+        matched_words.truncate(original_len);
         None
     }
 }
@@ -140,6 +144,8 @@ impl<P0: MultipleWordPattern, P1: MultipleWordPattern, P2: MultipleWordPattern> 
     }
 
     fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+        let original_len = matched_words.len();
+
         if let Some(next) = self.0.matches(matched_words, words) {
             let mut offset = next;
             if let Some(next) = self.1.matches(matched_words, &words[offset..]) {
@@ -150,6 +156,8 @@ impl<P0: MultipleWordPattern, P1: MultipleWordPattern, P2: MultipleWordPattern> 
                 }
             }
         }
+
+        matched_words.truncate(original_len);
         None
     }
 }
@@ -167,6 +175,8 @@ impl<
     }
 
     fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+        let original_len = matched_words.len();
+
         if let Some(next) = self.0.matches(matched_words, words) {
             let mut offset = next;
             if let Some(next) = self.1.matches(matched_words, &words[offset..]) {
@@ -180,6 +190,8 @@ impl<
                 }
             }
         }
+
+        matched_words.truncate(original_len);
         None
     }
 }
@@ -504,5 +516,29 @@ mod tests {
     #[test]
     fn test_lowercase() {
         eq(Lowercase("the"), vec![vec!["The"], vec!["the"]]);
+    }
+
+    #[test]
+    fn test_backtracking() {
+        eq(
+            Or((POS::Determiner, "dog"), (POS::Determiner, "cat")),
+            vec![vec!["The", "cat"]],
+        );
+
+        eq(
+            Or(
+                (POS::Determiner, "cat", "lay"),
+                (POS::Determiner, "cat", "sat"),
+            ),
+            vec![vec!["The", "cat", "sat"]],
+        );
+
+        eq(
+            Or(
+                (POS::Determiner, "cat", "sat", "by"),
+                (POS::Determiner, "cat", "sat", "on"),
+            ),
+            vec![vec!["The", "cat", "sat", "on"]],
+        );
     }
 }
