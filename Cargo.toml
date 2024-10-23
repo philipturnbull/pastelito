@@ -1,11 +1,11 @@
 [workspace]
 resolver = "2"
 members = [
-    "pastelito-data",
-    "pastelito-model",
-    "pastelito-core",
     "fuzz",
-    "pastelito-lsp"
+    "pastelito-core",
+    "pastelito-data",
+    "pastelito-lsp-vscode",
+    "pastelito-model"
 ]
 
 [workspace.package]
