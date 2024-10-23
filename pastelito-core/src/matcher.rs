@@ -5,7 +5,7 @@ use pastelito_data::POS;
 use crate::block::{Block, Word};
 
 /// A pattern that matches a single word.
-pub trait SingleWordPattern: Copy {
+pub trait SingleWordPattern {
     /// Check if the pattern matches the given word.
     ///
     /// `data` is the underlying data of the document, not the word itself.
@@ -13,7 +13,7 @@ pub trait SingleWordPattern: Copy {
 }
 
 /// A pattern that matches multiple words.
-pub trait MultipleWordPattern: Copy {
+pub trait MultipleWordPattern {
     /// An estimate of the number of words that this pattern will match.
     fn size_hint(&self) -> usize;
 
@@ -272,7 +272,7 @@ impl<P: MultipleWordPattern> MultipleWordPattern for Opt<P> {
 
 /// A top-level matcher that can match multiple word patterns while ignoring
 /// certain words.
-pub trait Matcher: Copy {
+pub trait Matcher {
     /// The type of pattern that matches words to ignore during matching.
     type IgnorePattern: SingleWordPattern;
 
@@ -280,7 +280,7 @@ pub trait Matcher: Copy {
     ///
     /// By default, this returns `None`, indicating that no words should be
     /// ignored.
-    fn ignore_pattern(&self) -> Option<Self::IgnorePattern> {
+    fn ignore_pattern(&self) -> Option<&Self::IgnorePattern> {
         None
     }
 
@@ -288,7 +288,7 @@ pub trait Matcher: Copy {
     type Pattern: MultipleWordPattern;
 
     /// Get the pattern to search for.
-    fn pattern(&self) -> Self::Pattern;
+    fn pattern(&self) -> &Self::Pattern;
 }
 
 /// All multiple word patterns are also matchers, which do not ignore any words.
@@ -296,8 +296,8 @@ impl<P: MultipleWordPattern> Matcher for P {
     type IgnorePattern = Any;
     type Pattern = P;
 
-    fn pattern(&self) -> P {
-        *self
+    fn pattern(&self) -> &P {
+        self
     }
 }
 
@@ -308,21 +308,21 @@ pub struct Ignore<I, P>(pub I, pub P);
 
 impl<I: SingleWordPattern, P: MultipleWordPattern> Matcher for Ignore<I, P> {
     type IgnorePattern = I;
-    fn ignore_pattern(&self) -> Option<Self::IgnorePattern> {
-        Some(self.0)
+    fn ignore_pattern(&self) -> Option<&Self::IgnorePattern> {
+        Some(&self.0)
     }
 
     type Pattern = P;
-    fn pattern(&self) -> Self::Pattern {
-        self.1
+    fn pattern(&self) -> &Self::Pattern {
+        &self.1
     }
 }
 
 /// Find each sequence of words in `block` that match `pattern`, and call
 /// `on_match` with the matched words.
-pub fn match_words<'a, M>(
+pub fn match_words<'a, 'm, M>(
     block: &Block<Word<'a>>,
-    matcher: M,
+    matcher: &'m M,
     mut on_match: impl FnMut(&[Word<'a>]),
 ) where
     M: Matcher,
@@ -396,7 +396,7 @@ mod tests {
         Block::with_testing_block(words, |block| {
             let mut matches: Vec<Vec<&str>> = Vec::new();
 
-            match_words(&block, pattern, |words| {
+            match_words(&block, &pattern, |words| {
                 let strings = words.iter().map(|word| word.as_str()).collect();
                 matches.push(strings);
             });

@@ -226,7 +226,7 @@ impl<U: MatcherRule> Rule for U {
     fn apply(&self, doc: &Document, warnings: &mut WarningsBuilder) {
         let matcher = Self::matcher();
         for block in doc.iter() {
-            match_words(block, matcher, |words| {
+            match_words(block, &matcher, |words| {
                 Self::on_match(words, warnings);
             });
         }
@@ -256,7 +256,7 @@ impl<U: PatternMeasure> Measure for U {
         let pattern = Self::pattern();
         let key = Self::key();
         for block in doc.iter() {
-            match_words(block, pattern, |words| {
+            match_words(block, &pattern, |words| {
                 measurements.add_measurement(key, words);
             });
         }
