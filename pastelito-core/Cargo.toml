@@ -13,6 +13,7 @@ pastelito-data = { path = "../pastelito-data" }
 pastelito-model = { path = "../pastelito-model" }
 regex = "1.11.0"
 strum = "0.26.3"
+lazy-regex = "3.3.0"
 
 [dev-dependencies]
 clap = { version = "4.5.20", features = ["derive"] }

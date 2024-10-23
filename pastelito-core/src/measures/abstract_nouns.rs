@@ -2,18 +2,18 @@ use pastelito_data::POS;
 
 use crate::{
     matcher::{AndS, OneOfS, Regex, SingleWordPattern},
-    rule::{MeasureKey, PatternMeasure},
+    rule::{Measure, MeasureKey},
 };
 
 pub struct AbstractNouns;
 
-impl PatternMeasure for AbstractNouns {
-    fn key() -> MeasureKey {
+impl Measure for AbstractNouns {
+    fn key(&self) -> MeasureKey {
         "abstract-nouns".into()
     }
 
-    fn pattern() -> impl SingleWordPattern {
-        AndS(
+    fn pattern(&self) -> Box<dyn SingleWordPattern> {
+        Box::new(AndS(
             OneOfS([
                 POS::NounPlural,
                 POS::NounSingularOrMass,
@@ -21,7 +21,7 @@ impl PatternMeasure for AbstractNouns {
                 POS::ProperNounPlural,
             ]),
             Regex::new(r"(?i)\w(ance|ence|ences|ion|ions|ism|isms|ment|ty|ties)$"),
-        )
+        ))
     }
 }
 

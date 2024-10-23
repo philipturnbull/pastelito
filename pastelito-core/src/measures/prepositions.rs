@@ -2,18 +2,18 @@ use pastelito_data::POS;
 
 use crate::{
     matcher::{OrS, SingleWordPattern},
-    rule::{MeasureKey, PatternMeasure},
+    rule::{Measure, MeasureKey},
 };
 
 pub struct Prepositions;
 
-impl PatternMeasure for Prepositions {
-    fn key() -> MeasureKey {
+impl Measure for Prepositions {
+    fn key(&self) -> MeasureKey {
         "prepositions".into()
     }
 
-    fn pattern() -> impl SingleWordPattern {
-        OrS(POS::PrepositionOrSubordinatingConjunction, POS::To)
+    fn pattern(&self) -> Box<dyn SingleWordPattern> {
+        Box::new(OrS(POS::PrepositionOrSubordinatingConjunction, POS::To))
     }
 }
 

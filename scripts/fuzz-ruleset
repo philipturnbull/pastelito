@@ -1,0 +1,2 @@
+#!/bin/bash
+cargo fuzz run --release --debug-assertions ruleset -- --max_len=128

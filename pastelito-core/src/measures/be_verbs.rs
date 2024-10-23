@@ -1,17 +1,17 @@
 use crate::{
     matcher::{Regex, SingleWordPattern},
-    rule::{MeasureKey, PatternMeasure},
+    rule::{Measure, MeasureKey},
 };
 
 pub struct BeVerbs;
 
-impl PatternMeasure for BeVerbs {
-    fn key() -> MeasureKey {
+impl Measure for BeVerbs {
+    fn key(&self) -> MeasureKey {
         "be-verbs".into()
     }
 
-    fn pattern() -> impl SingleWordPattern {
-        Regex::new(r"(?i)^(am|are|be|been|being|is|was|were)$")
+    fn pattern(&self) -> Box<dyn SingleWordPattern> {
+        Box::new(Regex::new(r"(?i)^(am|are|be|been|being|is|was|were)$"))
     }
 }
 

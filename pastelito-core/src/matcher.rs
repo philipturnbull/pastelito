@@ -5,7 +5,7 @@ use pastelito_data::POS;
 use crate::block::{Block, Word};
 
 /// A pattern that matches a single word.
-pub trait SingleWordPattern {
+pub trait SingleWordPattern: Send {
     /// Check if the pattern matches the given word.
     ///
     /// `data` is the underlying data of the document, not the word itself.

@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use tracing::debug_span;
+
 use crate::{
     block::Word,
     doc::Document,
@@ -129,8 +131,8 @@ pub struct MeasurementsBuilder<'a> {
 
 impl<'a> MeasurementsBuilder<'a> {
     /// Add a new measurement to the builder.
-    pub fn add_measurement(&mut self, key: MeasureKey, words: &[Word<'a>]) {
-        self.measurements.entry(key).or_default().extend(words);
+    pub fn add_measurement(&mut self, key: MeasureKey, word: &Word<'a>) {
+        self.measurements.entry(key).or_default().push(*word);
     }
 
     fn build(self) -> Vec<Measurement<'a>> {
@@ -233,32 +235,28 @@ impl<U: MatcherRule> Rule for U {
     }
 }
 
-/// A rule that measures some aspect of a document.
-pub trait Measure {
-    /// Apply the measure to the document, adding zero or more measurements to
-    /// the builder.
-    fn apply<'a>(&self, doc: &Document<'a>, measurements: &mut MeasurementsBuilder<'a>);
-}
-
 /// A measure that searches for a specific pattern, using a `SingleWordPattern`.
-pub trait PatternMeasure {
+pub trait Measure {
     /// Get the key for this measure.
-    fn key() -> MeasureKey;
+    fn key(&self) -> MeasureKey;
 
     /// Get the pattern for this measure.
-    fn pattern() -> impl SingleWordPattern;
+    fn pattern(&self) -> Box<dyn SingleWordPattern>;
 }
 
-impl<U: PatternMeasure> Measure for U {
-    /// Run the `pattern` on each block in the document, and call `on_match` for
-    /// each match.
+struct MeasureInstance {
+    key: MeasureKey,
+    pattern: Box<dyn SingleWordPattern>,
+}
+
+impl MeasureInstance {
     fn apply<'a>(&self, doc: &Document<'a>, measurements: &mut MeasurementsBuilder<'a>) {
-        let pattern = Self::pattern();
-        let key = Self::key();
         for block in doc.iter() {
-            match_words(block, &pattern, |words| {
-                measurements.add_measurement(key, words);
-            });
+            for word in block.as_slice() {
+                if self.pattern.matches_word(word) {
+                    measurements.add_measurement(self.key, word);
+                }
+            }
         }
     }
 }
@@ -266,28 +264,38 @@ impl<U: PatternMeasure> Measure for U {
 /// A set of rules and measures to apply to a document.
 pub struct RuleSet {
     rules: Vec<Box<dyn Rule>>,
-    measures: Vec<Box<dyn Measure>>,
+    measures: Vec<MeasureInstance>,
 }
 
 impl RuleSet {
     /// Create a new rule set with the given rules and masures.
     pub fn new(rules: Vec<Box<dyn Rule>>, measures: Vec<Box<dyn Measure>>) -> Self {
+        let measures = measures
+            .into_iter()
+            .map(|measure| MeasureInstance {
+                key: measure.key(),
+                pattern: measure.pattern(),
+            })
+            .collect();
         RuleSet { rules, measures }
     }
 
     /// Apply the rules and measures to the document, returning the results.
     pub fn apply<'a>(&self, doc: &Document<'a>) -> Results<'a> {
-        let mut results = ResultsBuilder::default();
+        let apply_span = debug_span!("RuleSet::apply");
+        apply_span.in_scope(|| {
+            let mut results = ResultsBuilder::default();
 
-        for rule in &self.rules {
-            rule.apply(doc, &mut results.warnings_builder);
-        }
+            for rule in &self.rules {
+                rule.apply(doc, &mut results.warnings_builder);
+            }
 
-        for measure in &self.measures {
-            measure.apply(doc, &mut results.measurements_builder);
-        }
+            for measure in &self.measures {
+                measure.apply(doc, &mut results.measurements_builder);
+            }
 
-        results.build()
+            results.build()
+        })
     }
 }
 

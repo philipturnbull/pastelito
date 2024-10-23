@@ -2,17 +2,17 @@ use pastelito_data::POS;
 
 use crate::{
     matcher::{OrS, SingleWordPattern},
-    rule::{MeasureKey, PatternMeasure},
+    rule::{Measure, MeasureKey},
 };
 
 pub struct Adjectives;
 
-impl PatternMeasure for Adjectives {
-    fn key() -> MeasureKey {
+impl Measure for Adjectives {
+    fn key(&self) -> MeasureKey {
         "adjectives".into()
     }
 
-    fn pattern() -> impl SingleWordPattern {
-        OrS(POS::Adjective, POS::Adverb)
+    fn pattern(&self) -> Box<dyn SingleWordPattern> {
+        Box::new(OrS(POS::Adjective, POS::Adverb))
     }
 }

@@ -22,3 +22,10 @@ path = "fuzz_targets/markdown.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "ruleset"
+path = "fuzz_targets/ruleset.rs"
+test = false
+doc = false
+bench = false
