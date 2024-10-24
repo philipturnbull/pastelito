@@ -1,6 +1,5 @@
 use pastelito_data::{ContextWord, Feature, Model, POS};
 use strum::EnumCount as _;
-use tracing::debug_span;
 
 use crate::block::{Block, Word};
 
@@ -16,19 +15,16 @@ struct Context {
 impl Context {
     /// Create a new `Context` from the given block.
     fn new(block: &Block<Word>) -> Self {
-        let context_span = debug_span!("create context");
-        context_span.in_scope(|| {
-            let tokens = [Some(ContextWord::START2), Some(ContextWord::START)]
-                .into_iter()
-                .chain(
-                    block
-                        .iter()
-                        .map(|word| ContextWord::new_from_word(word.as_str(), word.pos())),
-                )
-                .chain([Some(ContextWord::END), Some(ContextWord::END2)])
-                .collect::<Vec<_>>();
-            Context { tokens }
-        })
+        let tokens = [Some(ContextWord::START2), Some(ContextWord::START)]
+            .into_iter()
+            .chain(
+                block
+                    .iter()
+                    .map(|word| ContextWord::new_from_word(word.as_str(), word.pos())),
+            )
+            .chain([Some(ContextWord::END), Some(ContextWord::END2)])
+            .collect::<Vec<_>>();
+        Context { tokens }
     }
 
     /// Get the context window around the given word index.

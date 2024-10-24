@@ -20,9 +20,8 @@ impl<'a> Document<'a> {
         let parse_span = debug_span!("parse");
         let mut blocks = parse_span.in_scope(|| parser.parse(data));
 
-        let tagger_span = debug_span!("create POS tagger");
-        let tagger = tagger_span.in_scope(Tagger::default);
-        let tag_span = debug_span!("run POS tagger");
+        let tagger = Tagger::default();
+        let tag_span = debug_span!("tag");
         tag_span.in_scope(|| {
             for block in &mut blocks {
                 tagger.tag(block);

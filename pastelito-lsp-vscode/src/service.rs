@@ -89,11 +89,9 @@ impl Service {
     ) -> PublishDiagnosticsParams {
         let generate_span = debug_span!("generate_publish_diagnostics_params");
         let diagnostics = generate_span.in_scope(|| {
-            let doc_span = debug_span!("Document::new");
-            let doc = doc_span.in_scope(|| Document::new(&MarkdownParser::default(), text));
+            let doc = Document::new(&MarkdownParser::default(), text);
 
-            let results_span = debug_span!("ruleset.apply");
-            let results = results_span.in_scope(|| self.ruleset.apply(&doc));
+            let results = self.ruleset.apply(&doc);
 
             let diagnostics_span = debug_span!("rule_results_to_diagnostics");
             diagnostics_span.in_scope(|| rule_results_to_diagnostics(text, results))
