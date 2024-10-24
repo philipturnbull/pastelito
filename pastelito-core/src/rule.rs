@@ -102,12 +102,27 @@ impl From<MeasureKey> for String {
 }
 
 /// An instance of a measurement.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Measurement<'a> {
     /// The word that was measured.
     pub word: Word<'a>,
     /// The key for the measurement.
     pub key: MeasureKey,
+}
+
+impl PartialOrd for Measurement<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Measurement<'_> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.word
+            .as_span()
+            .cmp(&other.word.as_span())
+            .then_with(|| self.key.cmp(&other.key))
+    }
 }
 
 impl<'a> Measurement<'a> {
@@ -308,11 +323,16 @@ impl Default for RuleSet {
 
 #[cfg(test)]
 pub(crate) mod test {
+    use pastelito_data::POS;
+
     use crate::{
         doc::Document,
         parsers::PlaintextParser,
-        rule::{Measure, Rule, RuleSet},
+        rule::{HasSpan, Measure, Rule, RuleSet},
+        Word,
     };
+
+    use super::{ResultsBuilder, WarningBuilder};
 
     pub(crate) fn rule_eq<R: Rule + 'static>(rule: R, data: &str, expected: usize) {
         let doc = Document::new(&PlaintextParser::default(), data);
@@ -340,6 +360,64 @@ pub(crate) mod test {
             data,
             doc,
             measurements
+        );
+    }
+
+    #[should_panic]
+    #[test]
+    fn empty_warnings() {
+        WarningBuilder::new(&[]).message("message".into()).build();
+    }
+
+    #[test]
+    fn results_are_sorted() {
+        let str = "foo bar";
+        let word0 = Word::new(&str[0..3], 0, POS::Unknown);
+        let word1 = Word::new(&str[4..6], 4, POS::Unknown);
+
+        let mut builder = ResultsBuilder::default();
+
+        builder.warnings_builder.add_warning(
+            WarningBuilder::new(&[word1])
+                .message("warning1".into())
+                .build(),
+        );
+        builder.warnings_builder.add_warning(
+            WarningBuilder::new(&[word0])
+                .message("warning0".into())
+                .build(),
+        );
+
+        builder
+            .measurements_builder
+            .add_measurement("key0".into(), &word1);
+        builder
+            .measurements_builder
+            .add_measurement("key1".into(), &word0);
+
+        let results = builder.build();
+        let (warnings, measurements) = results.into_iter_both();
+
+        let warnings = warnings
+            .map(|warning| (warning.message.clone(), warning.span()))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            warnings,
+            vec![
+                ("warning0".into(), word0.as_span()),
+                ("warning1".into(), word1.as_span())
+            ]
+        );
+
+        let measurements = measurements
+            .map(|measurement| (measurement.key, measurement.span()))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            measurements,
+            vec![
+                ("key1".into(), word0.as_span()),
+                ("key0".into(), word1.as_span())
+            ]
         );
     }
 }

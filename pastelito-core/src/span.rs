@@ -306,6 +306,10 @@ impl<'a> From<FullByteSpan<'a>> for (&'a str, ByteSpan) {
 
 impl<'a> From<&[Word<'a>]> for ByteSpan {
     fn from(words: &[Word<'a>]) -> Self {
+        if words.is_empty() {
+            panic!("Cannot create a span from an empty list of words");
+        }
+
         let first = words.first().unwrap();
         let last = words.last().unwrap();
 

@@ -13,7 +13,7 @@ pub enum BlockKind {
 }
 
 /// A word in a block of text.
-#[derive(Copy, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Debug, Clone, Eq, PartialEq)]
 pub struct Word<'a> {
     str: &'a str,
     offset: usize,
