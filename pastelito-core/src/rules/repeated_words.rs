@@ -31,11 +31,22 @@ impl MatcherRule for RepeatedWords {
     }
 
     fn on_match(words: &[Word], warnings: &mut WarningsBuilder) {
-        warnings.add_warning(
-            WarningBuilder::new(words)
-                .message("Repeated words".into())
-                .build(),
+        assert_eq!(
+            words.len(),
+            2,
+            "Internal error: expected 2 words in RepeatedWords"
         );
+
+        let word0 = words[0];
+        let word1 = words[1];
+
+        if word0.eq_ignore_ascii_case(&word1) {
+            warnings.add_warning(
+                WarningBuilder::new(words)
+                    .message("Repeated words".into())
+                    .build(),
+            );
+        }
     }
 }
 
@@ -48,7 +59,7 @@ mod tests {
     #[test]
     fn test() {
         // Determiner
-        rule_eq(RepeatedWords, "An the apple.", 1);
+        rule_eq(RepeatedWords, "An an apple.", 1);
         // VerbNon3rdPersonSingularPresent
         rule_eq(RepeatedWords, "I am am describing.", 1);
         // Modal
@@ -56,9 +67,9 @@ mod tests {
         // PrepositionOrSubordinatingConjunction
         rule_eq(RepeatedWords, "It is on on the table.", 1);
         // PersonalPronoun
-        rule_eq(RepeatedWords, "He she is here.", 1);
+        rule_eq(RepeatedWords, "He he is here.", 1);
         // PossesivePronoun
-        rule_eq(RepeatedWords, "His her cat is here.", 1);
+        rule_eq(RepeatedWords, "His his cat is here.", 1);
         // To
         rule_eq(RepeatedWords, "We are going to to the store.", 1);
         // be
@@ -67,5 +78,8 @@ mod tests {
         rule_eq(RepeatedWords, "It is is a cat.", 1);
         // are
         rule_eq(RepeatedWords, "They are are here.", 1);
+
+        // Prepositions are allowed to repeat if they are different
+        rule_eq(RepeatedWords, "Because because it was difficult.", 1);
     }
 }

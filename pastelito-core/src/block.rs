@@ -77,6 +77,11 @@ impl<'a> Word<'a> {
     pub fn clear_pos(&mut self) {
         self.pos = None;
     }
+
+    /// Checks that two words are equal, ignoring case.
+    pub fn eq_ignore_ascii_case(&self, other: &Self) -> bool {
+        self.str.eq_ignore_ascii_case(other.str)
+    }
 }
 
 impl<'a> From<FullByteSpan<'a>> for Word<'a> {
