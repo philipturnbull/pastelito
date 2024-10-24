@@ -12,6 +12,7 @@ impl MatcherRule for AcademicWe {
     fn matcher() -> impl Matcher {
         (
             Lowercase("we"),
+            POS::Modal,
             OneOfS([
                 POS::VerbBaseForm,
                 POS::VerbPastTense,
@@ -40,6 +41,7 @@ mod tests {
 
     #[test]
     fn test() {
-        rule_eq(AcademicWe, "In this paper, we show a novel blah.", 1);
+        rule_eq(AcademicWe, "In this paper, we will show a novel blah.", 1);
+        rule_eq(AcademicWe, "The knowledge that we gained while working.", 0);
     }
 }
