@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(path) = args.log_file {
         let subscriber = tracing_subscriber::fmt()
-            .with_max_level(LevelFilter::TRACE)
+            .with_max_level(LevelFilter::DEBUG)
             .with_span_events(FmtSpan::CLOSE)
             .with_writer(std::fs::File::create(path)?)
             .finish();
