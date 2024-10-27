@@ -1,15 +1,14 @@
 //! The default model for the Pastelito tagger.
-use lazy_static::lazy_static;
+use std::sync::OnceLock;
+
 use pastelito_data::Model;
 use speedy::Readable as _;
 
 static MODEL_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/model.bin"));
 
-lazy_static! {
-    static ref MODEL: Model = Model::read_from_buffer(MODEL_BIN).unwrap();
-}
+static MODEL: OnceLock<Model> = OnceLock::new();
 
 /// Get the default model.
 pub fn get() -> &'static Model {
-    &MODEL
+    MODEL.get_or_init(|| Model::read_from_buffer(MODEL_BIN).unwrap())
 }
