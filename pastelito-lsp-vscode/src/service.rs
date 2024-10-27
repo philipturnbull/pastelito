@@ -1,4 +1,3 @@
-use pastelito_core::lines::spans_to_ranges;
 use pastelito_core::lines::LineCharRange;
 use pastelito_core::parsers::MarkdownParser;
 use pastelito_core::rule::Results;
@@ -29,17 +28,15 @@ fn to_vscode_range(range: LineCharRange) -> Range {
     }
 }
 
-fn rule_results_to_diagnostics(text: &str, results: Results) -> Vec<Diagnostic> {
+fn rule_results_to_diagnostics(results: Results) -> Vec<Diagnostic> {
     let mut diagnostics =
         Vec::with_capacity(results.iter_measurements().count() + results.iter_warnings().count());
 
     let source = Some("pastelito".to_owned());
 
-    let (warnings, measurements) = results.into_iter_both();
-
     let warnings_span = debug_span!("rule_results_to_diagnostics.warnings");
     warnings_span.in_scope(|| {
-        let warnings = spans_to_ranges(text, warnings);
+        let warnings = results.iter_warnings_with_ranges();
         diagnostics.extend(warnings.map(|(range, result)| Diagnostic {
             range: to_vscode_range(range),
             severity: Some(DiagnosticSeverity::ERROR),
@@ -51,7 +48,7 @@ fn rule_results_to_diagnostics(text: &str, results: Results) -> Vec<Diagnostic> 
 
     let measurements_span = debug_span!("rule_results_to_diagnostics.measurements");
     measurements_span.in_scope(|| {
-        let measurements = spans_to_ranges(text, measurements);
+        let measurements = results.iter_measurements_with_ranges();
         diagnostics.extend(measurements.map(|(range, measurement)| Diagnostic {
             range: to_vscode_range(range),
             severity: Some(DiagnosticSeverity::HINT),
@@ -85,7 +82,7 @@ impl Service {
             let results = self.ruleset.apply(&doc);
 
             let diagnostics_span = debug_span!("rule_results_to_diagnostics");
-            diagnostics_span.in_scope(|| rule_results_to_diagnostics(text, results))
+            diagnostics_span.in_scope(|| rule_results_to_diagnostics(results))
         });
 
         PublishDiagnosticsParams {

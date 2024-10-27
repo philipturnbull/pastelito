@@ -11,6 +11,7 @@ pub trait Parser {
 /// A document, containing a sequence of blocks.
 #[derive(Clone, Debug)]
 pub struct Document<'a> {
+    data: &'a str,
     blocks: Vec<Block<Word<'a>>>,
 }
 
@@ -28,7 +29,12 @@ impl<'a> Document<'a> {
             }
         });
 
-        Document { blocks }
+        Document { data, blocks }
+    }
+
+    /// Get the input that this document was created from.
+    pub fn data(&self) -> &'a str {
+        self.data
     }
 
     /// Get an iterator over the blocks in this document.

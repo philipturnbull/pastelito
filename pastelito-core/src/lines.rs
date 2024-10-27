@@ -69,7 +69,7 @@ impl LineCounter {
 /// Convert a sequence of items with spans to a sequence of items with ranges.
 ///
 /// `items` must be sorted by span, otherwise this function will panic.
-pub fn spans_to_ranges<T: HasSpan, U: Iterator<Item = T>>(
+pub(crate) fn spans_to_ranges<T: HasSpan, U: Iterator<Item = T>>(
     text: &str,
     items: U,
 ) -> impl Iterator<Item = (LineCharRange, T)> + use<'_, T, U> {

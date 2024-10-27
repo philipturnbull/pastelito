@@ -5,14 +5,16 @@ use tracing::debug_span;
 use crate::{
     block::Word,
     doc::Document,
+    lines::spans_to_ranges,
     matcher::{match_words, Matcher, SingleWordPattern},
     measures::default_measures,
     rules::default_rules,
     span::ByteSpan,
+    LineCharRange,
 };
 
 /// This structure has a `ByteSpan`.
-pub trait HasSpan {
+pub(crate) trait HasSpan {
     fn span(&self) -> ByteSpan;
 }
 
@@ -24,12 +26,6 @@ pub struct Warning {
     pub span: ByteSpan,
     /// The message associated with the warning.
     pub message: String,
-}
-
-impl HasSpan for Warning {
-    fn span(&self) -> ByteSpan {
-        self.span
-    }
 }
 
 impl HasSpan for &Warning {
@@ -146,12 +142,6 @@ impl<'a> Measurement<'a> {
     }
 }
 
-impl HasSpan for Measurement<'_> {
-    fn span(&self) -> ByteSpan {
-        self.word.as_span()
-    }
-}
-
 impl HasSpan for &Measurement<'_> {
     fn span(&self) -> ByteSpan {
         self.word.as_span()
@@ -186,16 +176,25 @@ impl<'a> MeasurementsBuilder<'a> {
 }
 
 /// A builder for `Results`.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct ResultsBuilder<'a> {
+    data: &'a str,
     warnings_builder: WarningsBuilder,
     measurements_builder: MeasurementsBuilder<'a>,
 }
 
 impl<'a> ResultsBuilder<'a> {
-    /// Build the `Results`.
+    fn new(data: &'a str) -> Self {
+        ResultsBuilder {
+            data,
+            warnings_builder: WarningsBuilder::default(),
+            measurements_builder: MeasurementsBuilder::default(),
+        }
+    }
+
     fn build(self) -> Results<'a> {
         Results {
+            data: self.data,
             warnings: self.warnings_builder.build(),
             measurements: self.measurements_builder.build(),
         }
@@ -205,6 +204,7 @@ impl<'a> ResultsBuilder<'a> {
 /// The results of applying rules and measures to a document.
 #[derive(Debug, Default, Clone)]
 pub struct Results<'a> {
+    data: &'a str,
     warnings: Vec<Warning>,
     measurements: Vec<Measurement<'a>>,
 }
@@ -217,24 +217,27 @@ impl<'a> Results<'a> {
         self.warnings.iter()
     }
 
+    /// Iterate over the warnings with their ranges.
+    ///
+    /// Warnings are ordered by their span in ascending order.
+    pub fn iter_warnings_with_ranges(&self) -> impl Iterator<Item = (LineCharRange, &Warning)> {
+        spans_to_ranges(self.data, self.warnings.iter())
+    }
+
     /// Iterate over the measurements.
     ///
     /// Measurements are ordered by the word in ascending order, and then by the `MeasureKey`.
-    pub fn iter_measurements(&self) -> impl Iterator<Item = &Measurement> {
+    pub fn iter_measurements(&self) -> impl Iterator<Item = &Measurement<'a>> {
         self.measurements.iter()
     }
 
-    /// Consume the results and iterate over the warnings and measurements.
+    /// Iterate over the measurements with their ranges.
     ///
-    /// Warnings are ordered by their span in ascending order. Measurements are
-    /// ordered by the word in ascending order, and then by the `MeasureKey`.
-    pub fn into_iter_both(
-        self,
-    ) -> (
-        impl Iterator<Item = Warning>,
-        impl Iterator<Item = Measurement<'a>>,
-    ) {
-        (self.warnings.into_iter(), self.measurements.into_iter())
+    /// Measurements are ordered by the word in ascending order, and then by the `MeasureKey`.
+    pub fn iter_measurements_with_ranges(
+        &self,
+    ) -> impl Iterator<Item = (LineCharRange, &Measurement<'a>)> {
+        spans_to_ranges(self.data, self.measurements.iter())
     }
 }
 
@@ -244,7 +247,7 @@ impl quickcheck::Arbitrary for Results<'static> {
         let warnings = Vec::<(Word<'static>, String)>::arbitrary(g);
         let measurements = Vec::<(Word<'static>, MeasureKey)>::arbitrary(g);
 
-        let mut builder = ResultsBuilder::default();
+        let mut builder = ResultsBuilder::new(crate::block::ARBITRARY_STR);
 
         for (word, message) in warnings {
             builder
@@ -341,7 +344,7 @@ impl RuleSet {
     pub fn apply<'a>(&self, doc: &Document<'a>) -> Results<'a> {
         let apply_span = debug_span!("RuleSet::apply");
         apply_span.in_scope(|| {
-            let mut results = ResultsBuilder::default();
+            let mut results = ResultsBuilder::new(doc.data());
 
             for rule in &self.rules {
                 rule.apply(doc, &mut results.warnings_builder);

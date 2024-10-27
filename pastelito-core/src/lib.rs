@@ -21,5 +21,6 @@ mod tokenize;
 pub use block::Block;
 pub use block::Word;
 pub use doc::Document;
+pub use lines::LineCharRange;
 pub use span::ByteSpan;
 pub use tagger::Tagger;
