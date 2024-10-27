@@ -3,19 +3,7 @@
 mod helpers;
 use helpers::{filter_panics, RULESET};
 use libfuzzer_sys::{fuzz_target, Corpus};
-use pastelito_core::{
-    lines::{spans_to_ranges, LineCharRange},
-    parsers::MarkdownParser,
-    Document,
-};
-
-struct FuzzRange {}
-
-impl LineCharRange for FuzzRange {
-    fn new(_start_line: u32, _start_char: u32, _end_line: u32, _end_char: u32) -> Self {
-        Self {}
-    }
-}
+use pastelito_core::{lines::spans_to_ranges, parsers::MarkdownParser, Document};
 
 fn do_fuzz(data: &[u8]) -> Corpus {
     if let Ok(markdown) = std::str::from_utf8(data) {
@@ -26,14 +14,10 @@ fn do_fuzz(data: &[u8]) -> Corpus {
             let (warnings, measurements) = results.into_iter_both();
 
             let warnings = spans_to_ranges(markdown, warnings);
-            let _num_warnings = warnings
-                .map(|(_range, _warning): (FuzzRange, _)| {})
-                .count();
+            let _num_warnings = warnings.map(|(_range, _warning)| {}).count();
 
             let measurements = spans_to_ranges(markdown, measurements);
-            let _num_measurements = measurements
-                .map(|(_range, _measurement): (FuzzRange, _)| {})
-                .count();
+            let _num_measurements = measurements.map(|(_range, _measurement)| {}).count();
         });
 
         Corpus::Keep

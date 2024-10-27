@@ -1,5 +1,10 @@
 #![feature(ascii_char)]
 #![feature(ascii_char_variants)]
+
+#[cfg(test)]
+#[macro_use(quickcheck)]
+extern crate quickcheck_macros;
+
 mod block;
 pub mod doc;
 pub mod lines;

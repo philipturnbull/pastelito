@@ -22,15 +22,10 @@ pub struct Service {
     ruleset: RuleSet,
 }
 
-// Use a newtype wrapper to word around the orphan rule
-struct VscodeRange(Range);
-
-impl LineCharRange for VscodeRange {
-    fn new(start_line: u32, start_char: u32, end_line: u32, end_char: u32) -> Self {
-        Self(Range {
-            start: Position::new(start_line, start_char),
-            end: Position::new(end_line, end_char),
-        })
+fn to_vscode_range(range: LineCharRange) -> Range {
+    Range {
+        start: Position::new(range.start_line, range.start_char),
+        end: Position::new(range.end_line, range.end_char),
     }
 }
 
@@ -45,30 +40,26 @@ fn rule_results_to_diagnostics(text: &str, results: Results) -> Vec<Diagnostic> 
     let warnings_span = debug_span!("rule_results_to_diagnostics.warnings");
     warnings_span.in_scope(|| {
         let warnings = spans_to_ranges(text, warnings);
-        diagnostics.extend(
-            warnings.map(|(range, result): (VscodeRange, _)| Diagnostic {
-                range: range.0,
-                severity: Some(DiagnosticSeverity::ERROR),
-                source: source.clone(),
-                message: result.message.to_owned(),
-                ..Default::default()
-            }),
-        );
+        diagnostics.extend(warnings.map(|(range, result)| Diagnostic {
+            range: to_vscode_range(range),
+            severity: Some(DiagnosticSeverity::ERROR),
+            source: source.clone(),
+            message: result.message.to_owned(),
+            ..Default::default()
+        }));
     });
 
     let measurements_span = debug_span!("rule_results_to_diagnostics.measurements");
     measurements_span.in_scope(|| {
         let measurements = spans_to_ranges(text, measurements);
-        diagnostics.extend(
-            measurements.map(|(range, measurement): (VscodeRange, _)| Diagnostic {
-                range: range.0,
-                severity: Some(DiagnosticSeverity::HINT),
-                code: Some(NumberOrString::String(measurement.key.into())),
-                source: source.clone(),
-                message: measurement.key.into(),
-                ..Default::default()
-            }),
-        );
+        diagnostics.extend(measurements.map(|(range, measurement)| Diagnostic {
+            range: to_vscode_range(range),
+            severity: Some(DiagnosticSeverity::HINT),
+            code: Some(NumberOrString::String(measurement.key.into())),
+            source: source.clone(),
+            message: measurement.key.into(),
+            ..Default::default()
+        }));
     });
 
     diagnostics

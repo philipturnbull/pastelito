@@ -1,8 +1,23 @@
 use crate::{rule::HasSpan, ByteSpan};
 
 /// A range in a document containing line number and character offsets.
-pub trait LineCharRange {
-    fn new(start_line: u32, start_char: u32, end_line: u32, end_char: u32) -> Self;
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct LineCharRange {
+    pub start_line: u32,
+    pub start_char: u32,
+    pub end_line: u32,
+    pub end_char: u32,
+}
+
+impl LineCharRange {
+    pub fn new(start_line: u32, start_char: u32, end_line: u32, end_char: u32) -> Self {
+        LineCharRange {
+            start_line,
+            start_char,
+            end_line,
+            end_char,
+        }
+    }
 }
 
 #[derive(Default)]
@@ -13,7 +28,7 @@ struct LineCounter {
 }
 
 impl LineCounter {
-    fn span_to_range<R: LineCharRange>(&mut self, text: &str, span: ByteSpan) -> R {
+    fn span_to_range(&mut self, text: &str, span: ByteSpan) -> LineCharRange {
         let start = span.start();
         let end = span.end();
 
@@ -42,7 +57,7 @@ impl LineCounter {
         let end_line_num = start_line_num + text[start..end].chars().filter(|&c| c == '\n').count();
         let end_char_offset_in_line = text[..end].chars().rev().take_while(|&c| c != '\n').count();
 
-        R::new(
+        LineCharRange::new(
             start_line_num as u32,
             start_char_offset_in_line as u32,
             end_line_num as u32,
@@ -54,13 +69,41 @@ impl LineCounter {
 /// Convert a sequence of items with spans to a sequence of items with ranges.
 ///
 /// `items` must be sorted by span, otherwise this function will panic.
-pub fn spans_to_ranges<R: LineCharRange, T: HasSpan, U: Iterator<Item = T>>(
+pub fn spans_to_ranges<T: HasSpan, U: Iterator<Item = T>>(
     text: &str,
     items: U,
-) -> impl Iterator<Item = (R, T)> + use<'_, R, T, U> {
+) -> impl Iterator<Item = (LineCharRange, T)> + use<'_, T, U> {
     let mut counter = LineCounter::default();
+
     items.map(move |item| {
         let range = counter.span_to_range(text, item.span());
         (range, item)
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        block::ARBITRARY_STR,
+        lines::{spans_to_ranges, LineCharRange},
+        rule::{Measurement, Results, Warning},
+    };
+
+    #[quickcheck]
+    fn warning_ranges_are_sorted(results: Results<'static>) -> bool {
+        let warnings = results.iter_warnings();
+        let warnings: Vec<(LineCharRange, &Warning)> =
+            spans_to_ranges(ARBITRARY_STR, warnings).collect();
+
+        warnings.windows(2).all(|pair| pair[0] <= pair[1])
+    }
+
+    #[quickcheck]
+    fn measurement_ranges_are_sorted(results: Results<'static>) -> bool {
+        let measurements = results.iter_measurements();
+        let measurements: Vec<(LineCharRange, &Measurement)> =
+            spans_to_ranges(ARBITRARY_STR, measurements).collect();
+
+        measurements.windows(2).all(|pair| pair[0] <= pair[1])
+    }
 }

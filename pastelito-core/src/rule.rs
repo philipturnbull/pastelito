@@ -18,7 +18,7 @@ pub trait HasSpan {
 
 /// A single finding from a rule which indicates a possible error in the
 /// document.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Warning {
     /// The span of the warning.
     pub span: ByteSpan,
@@ -27,6 +27,12 @@ pub struct Warning {
 }
 
 impl HasSpan for Warning {
+    fn span(&self) -> ByteSpan {
+        self.span
+    }
+}
+
+impl HasSpan for &Warning {
     fn span(&self) -> ByteSpan {
         self.span
     }
@@ -101,8 +107,16 @@ impl From<MeasureKey> for String {
     }
 }
 
+#[cfg(test)]
+impl quickcheck::Arbitrary for MeasureKey {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        let key = g.choose(&["key0", "key1", "key2", "key3"]).unwrap();
+        MeasureKey(key)
+    }
+}
+
 /// An instance of a measurement.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Measurement<'a> {
     /// The word that was measured.
     pub word: Word<'a>,
@@ -133,6 +147,12 @@ impl<'a> Measurement<'a> {
 }
 
 impl HasSpan for Measurement<'_> {
+    fn span(&self) -> ByteSpan {
+        self.word.as_span()
+    }
+}
+
+impl HasSpan for &Measurement<'_> {
     fn span(&self) -> ByteSpan {
         self.word.as_span()
     }
@@ -183,7 +203,7 @@ impl<'a> ResultsBuilder<'a> {
 }
 
 /// The results of applying rules and measures to a document.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Results<'a> {
     warnings: Vec<Warning>,
     measurements: Vec<Measurement<'a>>,
@@ -215,6 +235,28 @@ impl<'a> Results<'a> {
         impl Iterator<Item = Measurement<'a>>,
     ) {
         (self.warnings.into_iter(), self.measurements.into_iter())
+    }
+}
+
+#[cfg(test)]
+impl quickcheck::Arbitrary for Results<'static> {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        let warnings = Vec::<(Word<'static>, String)>::arbitrary(g);
+        let measurements = Vec::<(Word<'static>, MeasureKey)>::arbitrary(g);
+
+        let mut builder = ResultsBuilder::default();
+
+        for (word, message) in warnings {
+            builder
+                .warnings_builder
+                .add_warning(WarningBuilder::new(&[word]).message(message).build());
+        }
+
+        for (word, key) in measurements {
+            builder.measurements_builder.add_measurement(key, &word);
+        }
+
+        builder.build()
     }
 }
 
@@ -323,16 +365,13 @@ impl Default for RuleSet {
 
 #[cfg(test)]
 pub(crate) mod test {
-    use pastelito_data::POS;
-
     use crate::{
         doc::Document,
         parsers::PlaintextParser,
-        rule::{HasSpan, Measure, Rule, RuleSet},
-        Word,
+        rule::{Measure, Results, Rule, RuleSet},
     };
 
-    use super::{ResultsBuilder, WarningBuilder};
+    use super::WarningBuilder;
 
     pub(crate) fn rule_eq<R: Rule + 'static>(rule: R, data: &str, expected: usize) {
         let doc = Document::new(&PlaintextParser::default(), data);
@@ -369,55 +408,23 @@ pub(crate) mod test {
         WarningBuilder::new(&[]).message("message".into()).build();
     }
 
-    #[test]
-    fn results_are_sorted() {
-        let str = "foo bar";
-        let word0 = Word::new(&str[0..3], 0, POS::Unknown);
-        let word1 = Word::new(&str[4..6], 4, POS::Unknown);
+    #[quickcheck]
+    fn results_are_sorted(results: Results<'static>) -> bool {
+        let warnings = results.iter_warnings().collect::<Vec<_>>();
 
-        let mut builder = ResultsBuilder::default();
+        warnings.windows(2).all(|pair| pair[0].span <= pair[1].span)
+    }
 
-        builder.warnings_builder.add_warning(
-            WarningBuilder::new(&[word1])
-                .message("warning1".into())
-                .build(),
-        );
-        builder.warnings_builder.add_warning(
-            WarningBuilder::new(&[word0])
-                .message("warning0".into())
-                .build(),
-        );
+    #[quickcheck]
+    fn measurements_are_sorted(results: Results<'static>) -> bool {
+        let measurements = results.iter_measurements().collect::<Vec<_>>();
 
-        builder
-            .measurements_builder
-            .add_measurement("key0".into(), &word1);
-        builder
-            .measurements_builder
-            .add_measurement("key1".into(), &word0);
-
-        let results = builder.build();
-        let (warnings, measurements) = results.into_iter_both();
-
-        let warnings = warnings
-            .map(|warning| (warning.message.clone(), warning.span()))
-            .collect::<Vec<_>>();
-        assert_eq!(
-            warnings,
-            vec![
-                ("warning0".into(), word0.as_span()),
-                ("warning1".into(), word1.as_span())
-            ]
-        );
-
-        let measurements = measurements
-            .map(|measurement| (measurement.key, measurement.span()))
-            .collect::<Vec<_>>();
-        assert_eq!(
-            measurements,
-            vec![
-                ("key1".into(), word0.as_span()),
-                ("key0".into(), word1.as_span())
-            ]
-        );
+        measurements.windows(2).all(|pair| {
+            if pair[0].word.as_span() == pair[1].word.as_span() {
+                pair[0].key <= pair[1].key
+            } else {
+                pair[0] <= pair[1]
+            }
+        })
     }
 }

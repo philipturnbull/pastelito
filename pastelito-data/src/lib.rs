@@ -5,7 +5,7 @@ use speedy::{Readable, Writable};
 use std::ops::Range;
 use std::str::FromStr;
 use strum::{EnumCount, IntoEnumIterator as _};
-use strum_macros::{EnumCount, EnumIter, EnumString, IntoStaticStr};
+use strum_macros::{EnumCount, EnumIter, EnumString, IntoStaticStr, VariantArray};
 
 /// A part of speech.
 #[derive(
@@ -23,6 +23,7 @@ use strum_macros::{EnumCount, EnumIter, EnumString, IntoStaticStr};
     EnumIter,
     EnumString,
     IntoStaticStr,
+    VariantArray,
 )]
 #[repr(u8)]
 pub enum POS {

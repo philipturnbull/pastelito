@@ -1,4 +1,6 @@
 use pastelito_data::POS;
+#[allow(unused_imports)]
+use strum::VariantArray as _;
 
 use crate::{span::FullByteSpan, ByteSpan};
 
@@ -87,6 +89,21 @@ impl<'a> Word<'a> {
 impl<'a> From<FullByteSpan<'a>> for Word<'a> {
     fn from(span: FullByteSpan<'a>) -> Self {
         Word::new(span.as_str(), span.as_span().start())
+    }
+}
+
+#[cfg(test)]
+pub(crate) static ARBITRARY_STR: &str = "foo bar baz quux";
+
+#[cfg(test)]
+impl quickcheck::Arbitrary for Word<'static> {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        let pos = *g.choose(POS::VARIANTS).unwrap();
+
+        let offset_lens = [(0, 3), (4, 3), (8, 3), (12, 4)];
+        let (offset, len) = *g.choose(&offset_lens).unwrap();
+
+        Word::new_with_pos(&ARBITRARY_STR[offset..(offset + len)], offset, pos)
     }
 }
 
