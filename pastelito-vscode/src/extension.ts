@@ -73,19 +73,34 @@ class InitContext {
 async function initWASM(context: InitContext) {
 	const api = await pastelitoAPI(context.extensionUri);
 
+	function updateDiagnostics(document: vscode.TextDocument) {
+		if (document.languageId === 'markdown') {
+			const start = new Date().getTime();
+			console.log("start=" + start);
+			const results = api.applyDefaultRules(document.getText());
+			const end = new Date().getTime();
+			console.log("wasm end=" + end);
+			console.log(`results in ${end - start}ms: ${results.warnings.length} warnings, ${results.measurements.length} measurements`);
+
+			context.measurementsDisplay.handleResults(document.uri, results);
+		}
+	}
+
 	context.subscriptions.push(
 		vscode.workspace.onDidChangeTextDocument((event) => {
-			if (event.document.languageId === 'markdown') {
-				const start = new Date().getTime();
-				console.log("start=" + start);
-				const results = api.applyDefaultRules(event.document.getText());
-				const end = new Date().getTime();
-				console.log("wasm end=" + end);
-				console.log(`results in ${end - start}ms: ${results.warnings.length} warnings, ${results.measurements.length} measurements`);
-				context.measurementsDisplay.handleResults(event.document.uri, results.measurements);
-			}
+			updateDiagnostics(event.document);
 		})
 	);
+
+	context.subscriptions.push(
+		vscode.workspace.onDidOpenTextDocument((document) => {
+			updateDiagnostics(document);
+		})
+	);
+
+	vscode.window.visibleTextEditors.forEach((editor) => {
+		updateDiagnostics(editor.document);
+	});
 }
 
 async function initLSP(context: InitContext) {

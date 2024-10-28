@@ -113,6 +113,7 @@ class Matchers implements vscode.Disposable {
 }
 
 export class MeasurementsDisplay implements vscode.Disposable {
+    diagnostics: vscode.DiagnosticCollection;
     outputChannel: vscode.OutputChannel;
     disposables: vscode.Disposable[] = [];
     matchers: Matchers;
@@ -121,6 +122,8 @@ export class MeasurementsDisplay implements vscode.Disposable {
     cache: Map<string, Measurement[]> = new Map();
 
     constructor(outputChannel: vscode.OutputChannel) {
+        this.diagnostics = vscode.languages.createDiagnosticCollection('pastelito');
+
         this.outputChannel = outputChannel;
 
         this.disposables.push(
@@ -178,10 +181,24 @@ export class MeasurementsDisplay implements vscode.Disposable {
         this.applyDiagnosticsToUri(uri);
     }
 
-    handleResults(uri: vscode.Uri, results: Types.Measurement[]) {
-        this.cache.set(uri.toString(), results.map(Measurement.fromWASM));
+    handleResults(uri: vscode.Uri, results: Types.Results) {
+        this.cache.set(uri.toString(), results.measurements.map(Measurement.fromWASM));
 
         this.applyDiagnosticsToUri(uri);
+
+        let warnings = results.warnings.map((warning) =>
+            new vscode.Diagnostic(
+                new vscode.Range(
+                    warning.range.startLine,
+                    warning.range.startChar,
+                    warning.range.endLine,
+                    warning.range.endChar
+                ),
+                warning.message,
+                vscode.DiagnosticSeverity.Warning
+            )
+        );
+        this.diagnostics.set(uri, warnings);
     }
 
     applyDiagnosticsToUri(uri: vscode.Uri) {
