@@ -14,7 +14,7 @@ interface types {
     }
 
     record measurement {
-        key: string,
+        key: u32,
         range: range,
     }
 

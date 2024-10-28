@@ -72,8 +72,6 @@ class InitContext {
 
 async function initWASM(context: InitContext) {
 	const api = await pastelitoAPI(context.extensionUri);
-	//const markdown = "This isn't meant to brag or indicate success, but rather just show there has been more than enough effort put into Rust, to dispel the the commonly said 'once you gain enough experience it'll all make sense' argument.*";
-	//const results = api.applyDefaultRules(markdown);
 
 	context.subscriptions.push(
 		vscode.workspace.onDidChangeTextDocument((event) => {

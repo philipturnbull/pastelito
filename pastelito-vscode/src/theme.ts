@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { MeasurementKey } from './core';
+import { ABSTRACT_NOUNS, ACADEMIC_AD_WORDS, ADJECTIVES, BE_VERBS, MeasurementKey, PREPOSITIONS } from './core';
 
 export class Theme {
     private colors = new Map<MeasurementKey, string>();
@@ -14,11 +14,11 @@ export class Theme {
             prepositions: string, // typically blueish
         }
     ) {
-        this.colors.set('abstract-nouns', colors.abstract_nouns);
-        this.colors.set('academic-ad-words', colors.academic_ad_words);
-        this.colors.set('adjectives', colors.adjectives);
-        this.colors.set('be-verbs', colors.be_verbs);
-        this.colors.set('prepositions', colors.prepositions);
+        this.colors.set(ABSTRACT_NOUNS, colors.abstract_nouns);
+        this.colors.set(ACADEMIC_AD_WORDS, colors.academic_ad_words);
+        this.colors.set(ADJECTIVES, colors.adjectives);
+        this.colors.set(BE_VERBS, colors.be_verbs);
+        this.colors.set(PREPOSITIONS, colors.prepositions);
     }
 
     colorFor(measurement: MeasurementKey): string {

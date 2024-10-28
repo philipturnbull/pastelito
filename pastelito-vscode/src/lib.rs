@@ -5,8 +5,13 @@ use std::sync::OnceLock;
 use crate::pastelito::Guest;
 use pastelito::vscode::pastelito::types::{Measurement, Range, Results, Warning};
 //use pastelito::vscode::pastelito::types::Results;
-use pastelito_core::{parsers::MarkdownParser, rule::RuleSet, Document, LineCharRange};
+use pastelito_core::{
+    parsers::MarkdownParser,
+    rule::{MeasureKey, RuleSet},
+    Document, LineCharRange,
+};
 
+static KNOWN_MEASURE_KEYS: OnceLock<[(&'static str, u32); 5]> = OnceLock::new();
 static DEFAULT_RULESET: OnceLock<RuleSet> = OnceLock::new();
 
 fn to_range(range: LineCharRange) -> Range {
@@ -18,7 +23,25 @@ fn to_range(range: LineCharRange) -> Range {
     }
 }
 
+fn to_key(known_measure_keys: &[(&'static str, u32)], key: MeasureKey) -> u32 {
+    known_measure_keys
+        .iter()
+        .find(|(k, _)| <MeasureKey as From<&str>>::from(*k) == key)
+        .map(|(_, v)| *v)
+        .unwrap_or(0)
+}
+
 fn rule_results_to_results(results: pastelito_core::rule::Results) -> Results {
+    let known_measure_keys = KNOWN_MEASURE_KEYS.get_or_init(|| {
+        [
+            ("abstract-nouns", 0),
+            ("academic-ad-words", 1),
+            ("adjectives", 2),
+            ("be-verbs", 3),
+            ("prepositions", 4),
+        ]
+    });
+
     let warnings = results
         .iter_warnings_with_ranges()
         .map(|(range, warning)| Warning {
@@ -31,7 +54,7 @@ fn rule_results_to_results(results: pastelito_core::rule::Results) -> Results {
         .iter_measurements_with_ranges()
         .map(|(range, measurement)| Measurement {
             range: to_range(range),
-            key: measurement.key.into(),
+            key: to_key(known_measure_keys, measurement.key),
         })
         .collect::<Vec<_>>();
 

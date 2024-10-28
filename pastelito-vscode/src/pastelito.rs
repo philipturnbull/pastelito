@@ -41,38 +41,12 @@ for (i, e) in vec7.into_iter().enumerate() {
 }
 *ptr2.add(4).cast::<usize>() = len7;
 *ptr2.add(0).cast::<*mut u8>() = result7;
-let vec11 = measurements3;
-let len11 = vec11.len();
-let layout11 = _rt::alloc::Layout::from_size_align_unchecked(vec11.len() * 24, 4);
-let result11 = if layout11.size() != 0 {
-  let ptr = _rt::alloc::alloc(layout11).cast::<u8>();
-  if ptr.is_null()
-  {
-    _rt::alloc::handle_alloc_error(layout11);
-  }
-  ptr
-}else {
-  ::core::ptr::null_mut()
-};
-for (i, e) in vec11.into_iter().enumerate() {
-  let base = result11.add(i * 24);
-  {
-    let vscode::pastelito::types::Measurement{ key:key8, range:range8, } = e;
-    let vec9 = (key8.into_bytes()).into_boxed_slice();
-    let ptr9 = vec9.as_ptr().cast::<u8>();
-    let len9 = vec9.len();
-    ::core::mem::forget(vec9);
-    *base.add(4).cast::<usize>() = len9;
-    *base.add(0).cast::<*mut u8>() = ptr9.cast_mut();
-    let vscode::pastelito::types::Range{ start_line:start_line10, start_char:start_char10, end_line:end_line10, end_char:end_char10, } = range8;
-    *base.add(8).cast::<i32>() = _rt::as_i32(start_line10);
-    *base.add(12).cast::<i32>() = _rt::as_i32(start_char10);
-    *base.add(16).cast::<i32>() = _rt::as_i32(end_line10);
-    *base.add(20).cast::<i32>() = _rt::as_i32(end_char10);
-  }
-}
-*ptr2.add(12).cast::<usize>() = len11;
-*ptr2.add(8).cast::<*mut u8>() = result11;
+let vec8 = (measurements3).into_boxed_slice();
+let ptr8 = vec8.as_ptr().cast::<u8>();
+let len8 = vec8.len();
+::core::mem::forget(vec8);
+*ptr2.add(12).cast::<usize>() = len8;
+*ptr2.add(8).cast::<*mut u8>() = ptr8.cast_mut();
 ptr2
 }
 #[doc(hidden)]
@@ -93,17 +67,9 @@ pub unsafe fn __post_return_apply_default_rules<T: Guest>(arg0: *mut u8,) {
   _rt::cabi_dealloc(base4, len4 * 24, 4);
   let l5 = *arg0.add(8).cast::<*mut u8>();
   let l6 = *arg0.add(12).cast::<usize>();
-  let base9 = l5;
-  let len9 = l6;
-  for i in 0..len9 {
-    let base = base9.add(i * 24);
-    {
-      let l7 = *base.add(0).cast::<*mut u8>();
-      let l8 = *base.add(4).cast::<usize>();
-      _rt::cabi_dealloc(l7, l8, 1);
-    }
-  }
-  _rt::cabi_dealloc(base9, len9 * 24, 4);
+  let base7 = l5;
+  let len7 = l6;
+  _rt::cabi_dealloc(base7, len7 * 20, 4);
 }
 pub trait Guest {
   fn apply_default_rules(input: _rt::String,) -> Results;
@@ -163,9 +129,10 @@ pub mod vscode {
           f.debug_struct("Warning").field("message", &self.message).field("range", &self.range).finish()
         }
       }
-      #[derive(Clone)]
+      #[repr(C)]
+      #[derive(Clone, Copy)]
       pub struct Measurement {
-        pub key: _rt::String,
+        pub key: u32,
         pub range: Range,
       }
       impl ::core::fmt::Debug for Measurement {
@@ -319,7 +286,7 @@ pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 424] = *b"\
 \0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa8\x02\x01A\x02\x01\
 A\x06\x01B\x0a\x01r\x04\x0astart-liney\x0astart-chary\x08end-liney\x08end-chary\x04\
 \0\x05range\x03\0\0\x01r\x02\x07messages\x05range\x01\x04\0\x07warning\x03\0\x02\
-\x01r\x02\x03keys\x05range\x01\x04\0\x0bmeasurement\x03\0\x04\x01p\x03\x01p\x05\x01\
+\x01r\x02\x03keyy\x05range\x01\x04\0\x0bmeasurement\x03\0\x04\x01p\x03\x01p\x05\x01\
 r\x02\x08warnings\x06\x0cmeasurements\x07\x04\0\x07results\x03\0\x08\x03\0\x16vs\
 code:pastelito/types\x05\0\x02\x03\0\0\x07results\x03\0\x07results\x03\0\x01\x01\
 @\x01\x05inputs\0\x02\x04\0\x13apply-default-rules\x01\x03\x04\0\x1avscode:paste\

@@ -20,7 +20,7 @@ export namespace Types {
 	};
 
 	export type Measurement = {
-		key: string;
+		key: u32;
 		range: Range;
 	};
 
@@ -64,7 +64,7 @@ export namespace Types.$ {
 		['range', Range],
 	]);
 	export const Measurement = new $wcm.RecordType<Types.Measurement>([
-		['key', $wcm.wstring],
+		['key', $wcm.u32],
 		['range', Range],
 	]);
 	export const Results = new $wcm.RecordType<Types.Results>([
