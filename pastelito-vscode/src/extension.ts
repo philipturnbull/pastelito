@@ -171,6 +171,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	const measurementsDisplay = new MeasurementsDisplay(outputChannel);
 	context.subscriptions.push(measurementsDisplay);
 
+	context.subscriptions.push(
+		vscode.workspace.onDidCloseTextDocument((document) => {
+			measurementsDisplay.clearCache(document.uri);
+		})
+	);
+
 	const initContext = new InitContext(
 		context.subscriptions,
 		context.extensionUri,

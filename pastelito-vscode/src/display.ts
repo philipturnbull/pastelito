@@ -117,9 +117,10 @@ export class MeasurementsDisplay implements vscode.Disposable {
     outputChannel: vscode.OutputChannel;
     disposables: vscode.Disposable[] = [];
     matchers: Matchers;
-    // We store a cache of diagnostics for each document. This lets us change
+
+    // We store a cache of measurements for each document. This lets us change
     // the theme without triggering a request to the LSP
-    cache: Map<string, Measurement[]> = new Map();
+    measurementCache: Map<string, Measurement[]> = new Map();
 
     constructor(outputChannel: vscode.OutputChannel) {
         this.diagnostics = vscode.languages.createDiagnosticCollection('pastelito');
@@ -151,7 +152,7 @@ export class MeasurementsDisplay implements vscode.Disposable {
 
         this.disposables.push(
             vscode.workspace.onDidCloseTextDocument((document) => {
-                this.cache.delete(document.uri.toString());
+                this.measurementCache.delete(document.uri.toString());
             })
         );
 
@@ -176,13 +177,13 @@ export class MeasurementsDisplay implements vscode.Disposable {
 
     // Main entry-point, called when we receive diagnostics from the server.
     handleDiagnostics(uri: vscode.Uri, diagnostics: vscode.Diagnostic[]) {
-        this.cache.set(uri.toString(), diagnostics.map(Measurement.fromDiagnostic));
+        this.measurementCache.set(uri.toString(), diagnostics.map(Measurement.fromDiagnostic));
 
         this.applyDiagnosticsToUri(uri);
     }
 
     handleResults(uri: vscode.Uri, results: Types.Results) {
-        this.cache.set(uri.toString(), results.measurements.map(Measurement.fromWASM));
+        this.measurementCache.set(uri.toString(), results.measurements.map(Measurement.fromWASM));
 
         this.applyDiagnosticsToUri(uri);
 
@@ -201,6 +202,10 @@ export class MeasurementsDisplay implements vscode.Disposable {
         this.diagnostics.set(uri, warnings);
     }
 
+    clearCache(uri: vscode.Uri) {
+        this.measurementCache.delete(uri.toString());
+    }
+
     applyDiagnosticsToUri(uri: vscode.Uri) {
         this.withVisibleEditor(uri, (editor) => {
             this.applyDiagnosticsToEditor(editor);
@@ -208,7 +213,7 @@ export class MeasurementsDisplay implements vscode.Disposable {
     }
 
     applyDiagnosticsToEditor(editor: vscode.TextEditor) {
-        const measurements = this.cache.get(editor.document.uri.toString());
+        const measurements = this.measurementCache.get(editor.document.uri.toString());
         if (measurements === undefined) {
             return;
         }
