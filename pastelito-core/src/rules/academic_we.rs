@@ -1,7 +1,7 @@
 use pastelito_data::POS;
 
 use crate::{
-    matcher::{Lowercase, Matcher, OneOfS},
+    matcher::{Matcher, OneOfS, Regex},
     rule::{MatcherRule, WarningBuilder, WarningsBuilder},
     Word,
 };
@@ -11,7 +11,7 @@ pub struct AcademicWe;
 impl MatcherRule for AcademicWe {
     fn matcher() -> impl Matcher {
         (
-            Lowercase("we"),
+            Regex::new(r"(?i)^we$"),
             POS::Modal,
             OneOfS([
                 POS::VerbBaseForm,

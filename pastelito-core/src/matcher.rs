@@ -50,24 +50,6 @@ impl SingleWordPattern for StrFn {
     }
 }
 
-/// A pattern that matches words based on their string value, ignoring case.
-#[derive(Copy, Clone)]
-pub struct Lowercase(pub &'static str);
-
-impl SingleWordPattern for Lowercase {
-    fn matches_word(&self, word: &Word) -> bool {
-        let s = word.as_str();
-
-        if s.len() == self.0.len() {
-            s.chars()
-                .zip(self.0.chars())
-                .all(|(a, b)| a.to_ascii_lowercase() == b)
-        } else {
-            false
-        }
-    }
-}
-
 /// A pattern that matches words using a regular expression.
 #[derive(Clone)]
 pub struct Regex(regex::Regex);
@@ -436,7 +418,7 @@ mod tests {
 
     use crate::{block::test::with_testing_block, matcher::match_words};
 
-    use super::{Any, Ignore, Lowercase, Matcher, Opt, Or, PosFn};
+    use super::{Any, Ignore, Matcher, Opt, Or, PosFn};
 
     fn eq<P: Matcher>(pattern: P, expected: Vec<Vec<&str>>) {
         let words = &[
@@ -541,11 +523,6 @@ mod tests {
             Ignore(POS::Comma, (POS::Adjective, POS::Adjective)),
             vec![vec!["big", "green"]],
         )
-    }
-
-    #[test]
-    fn test_lowercase() {
-        eq(Lowercase("the"), vec![vec!["The"], vec!["the"]]);
     }
 
     #[test]
