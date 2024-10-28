@@ -1,0 +1,89 @@
+{
+  "name": "pastelito",
+  "displayName": "pastelito",
+  "description": "As syntax highlighter and linter for markdown files",
+  "version": "0.1.0",
+  "license": "MIT",
+  "keywords": [
+    "markdown",
+    "prose",
+    "english"
+  ],
+  "author": {
+    "name": "Phil Turnbull"
+  },
+  "private": true,
+  "repository": {
+    "url": "https://github.com/philipturnbull/pastelito",
+    "type": "git"
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "pastelito invokes an external binary"
+    }
+  },
+  "homepage": "https://github.com/philipturnbull/pastelito",
+  "engines": {
+    "vscode": "^1.78.0"
+  },
+  "categories": [
+    "Linters"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "properties": {
+        "pastelito.binary": {
+          "markdownDescription": "The path to the pastelito binary (default, look for `pastelito-lsp-vscode` in `$PATH`)",
+          "default": "",
+          "type": "string"
+        },
+        "pastelito.logFile": {
+          "markdownDescription": "An optional path for the LSP debugging log file",
+          "default": "",
+          "type": "string"
+        },
+        "pastelito.theme": {
+          "markdownDescription": "The color theme",
+          "default": "pastel-qt",
+          "type": "string",
+          "enum": [
+            "curiosities",
+            "fairydust-8",
+            "hydrangea-11",
+            "marumaru-gum",
+            "painted-parchment-9",
+            "pastel-qt",
+            "sweethope"
+          ]
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.8",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.94.0",
+    "@typescript-eslint/eslint-plugin": "^8.7.0",
+    "@typescript-eslint/parser": "^8.7.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.11.1",
+    "typescript": "^5.6.2"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}
