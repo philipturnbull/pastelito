@@ -23,7 +23,7 @@ function partition<T>(array: T[], predicate: (value: T) => boolean): [T[], T[]] 
 let client: LanguageClient | undefined;
 
 function getExecutable(): Executable {
-	const config = vscode.workspace.getConfiguration('pastelito');
+	const config = vscode.workspace.getConfiguration('pastelito.lsp');
 	let command = config.get('binary', '');
 	if (command === '') {
 		command = 'pastelito-lsp-vscode';
@@ -61,14 +61,16 @@ async function pastelitoAPI(extensionUri: vscode.Uri) {
 	return pastelito._.exports.bind(instance.exports as pastelito._.Exports, wasmContext)
 }
 
-export async function activate(context: vscode.ExtensionContext) {
-	const outputChannel = vscode.window.createOutputChannel('pastelito');
-	context.subscriptions.push(outputChannel);
-	outputChannel.appendLine('pastelito activated');
+class InitContext {
+	constructor(
+		readonly subscriptions: { dispose(): any }[],
+		readonly extensionUri: vscode.Uri,
+		readonly outputChannel: vscode.OutputChannel,
+		readonly measurementsDisplay: MeasurementsDisplay,
+	) { }
+}
 
-	const measurementsDisplay = new MeasurementsDisplay(outputChannel);
-	context.subscriptions.push(measurementsDisplay);
-
+async function initWASM(context: InitContext) {
 	const api = await pastelitoAPI(context.extensionUri);
 	//const markdown = "This isn't meant to brag or indicate success, but rather just show there has been more than enough effort put into Rust, to dispel the the commonly said 'once you gain enough experience it'll all make sense' argument.*";
 	//const results = api.applyDefaultRules(markdown);
@@ -82,11 +84,13 @@ export async function activate(context: vscode.ExtensionContext) {
 				const end = new Date().getTime();
 				console.log("wasm end=" + end);
 				console.log(`results in ${end - start}ms: ${results.warnings.length} warnings, ${results.measurements.length} measurements`);
-				measurementsDisplay.handleResults(event.document.uri, results.measurements);
+				context.measurementsDisplay.handleResults(event.document.uri, results.measurements);
 			}
 		})
 	);
+}
 
+async function initLSP(context: InitContext) {
 	const handleDiagnosticsHook = function (
 		this: void,
 		uri: vscode.Uri,
@@ -104,7 +108,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		);
 
 		// Display measurements in the editor.
-		measurementsDisplay.handleDiagnostics(uri, measurements);
+		context.measurementsDisplay.handleDiagnostics(uri, measurements);
 
 		// Continue with the warnings.
 		next(uri, warnings);
@@ -126,7 +130,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		middleware: {
 			handleDiagnostics: handleDiagnosticsHook,
 		},
-		outputChannel,
+		outputChannel: context.outputChannel,
 		outputChannelName: 'pastelito',
 	};
 
@@ -138,12 +142,36 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 
 	client.start().then(() => {
-		outputChannel.appendLine('Client started');
+		context.outputChannel.appendLine('Client started');
 	}).catch((err) => {
 		const msg = `Pastelito client failed to start: ${err}`;
-		outputChannel.appendLine(msg);
+		context.outputChannel.appendLine(msg);
 		vscode.window.showErrorMessage(msg);
 	});
+}
+
+export async function activate(context: vscode.ExtensionContext) {
+	const outputChannel = vscode.window.createOutputChannel('pastelito');
+	context.subscriptions.push(outputChannel);
+	outputChannel.appendLine('pastelito activated');
+
+	const measurementsDisplay = new MeasurementsDisplay(outputChannel);
+	context.subscriptions.push(measurementsDisplay);
+
+	const initContext = new InitContext(
+		context.subscriptions,
+		context.extensionUri,
+		outputChannel,
+		measurementsDisplay
+	);
+
+	const useLSP = vscode.workspace.getConfiguration('pastelito').get('useLSP', false);
+
+	if (useLSP) {
+		initLSP(initContext);
+	} else {
+		initWASM(initContext);
+	}
 }
 
 export function deactivate(): Thenable<void> | undefined {

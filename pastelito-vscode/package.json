@@ -37,12 +37,17 @@
   "contributes": {
     "configuration": {
       "properties": {
-        "pastelito.binary": {
+        "pastelito.useLSP": {
+          "markdownDescription": "Use the `pastelito-lsp-vscode` binary for syntax highlighting and linting. If `false`, use the builtin module.",
+          "default": false,
+          "type": "boolean"
+        },
+        "pastelito.lsp.binary": {
           "markdownDescription": "The path to the pastelito binary (default, look for `pastelito-lsp-vscode` in `$PATH`)",
           "default": "",
           "type": "string"
         },
-        "pastelito.logFile": {
+        "pastelito.lsp.logFile": {
           "markdownDescription": "An optional path for the LSP debugging log file",
           "default": "",
           "type": "string"
