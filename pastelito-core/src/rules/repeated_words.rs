@@ -40,7 +40,7 @@ impl MatcherRule for RepeatedWords {
         let word0 = words[0];
         let word1 = words[1];
 
-        if word0.eq_ignore_ascii_case(&word1) {
+        if word0.as_str().eq_ignore_ascii_case(word1.as_str()) {
             warnings.add_warning(
                 WarningBuilder::new(words)
                     .message("Repeated words".into())
