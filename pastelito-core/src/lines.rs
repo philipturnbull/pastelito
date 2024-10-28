@@ -28,7 +28,7 @@ struct LineCounter {
 }
 
 impl LineCounter {
-    fn span_to_range(&mut self, text: &str, span: ByteSpan) -> LineCharRange {
+    fn span_to_range(&mut self, input: &str, span: ByteSpan) -> LineCharRange {
         let start = span.start();
         let end = span.end();
 
@@ -39,13 +39,13 @@ impl LineCounter {
         let (start_line_num, start_char_offset_in_line) = if start == self.last_span_start {
             (self.line_num, self.start_char_offset_in_line)
         } else {
-            self.line_num += text[self.last_span_start..start]
+            self.line_num += input[self.last_span_start..start]
                 .chars()
                 .filter(|&c| c == '\n')
                 .count();
             self.last_span_start = start;
 
-            self.start_char_offset_in_line = text[..start]
+            self.start_char_offset_in_line = input[..start]
                 .chars()
                 .rev()
                 .take_while(|&c| c != '\n')
@@ -54,8 +54,13 @@ impl LineCounter {
             (self.line_num, self.start_char_offset_in_line)
         };
 
-        let end_line_num = start_line_num + text[start..end].chars().filter(|&c| c == '\n').count();
-        let end_char_offset_in_line = text[..end].chars().rev().take_while(|&c| c != '\n').count();
+        let end_line_num =
+            start_line_num + input[start..end].chars().filter(|&c| c == '\n').count();
+        let end_char_offset_in_line = input[..end]
+            .chars()
+            .rev()
+            .take_while(|&c| c != '\n')
+            .count();
 
         LineCharRange::new(
             start_line_num as u32,
@@ -70,13 +75,13 @@ impl LineCounter {
 ///
 /// `items` must be sorted by span, otherwise this function will panic.
 pub(crate) fn spans_to_ranges<T: HasSpan, U: Iterator<Item = T>>(
-    text: &str,
+    input: &str,
     items: U,
 ) -> impl Iterator<Item = (LineCharRange, T)> + use<'_, T, U> {
     let mut counter = LineCounter::default();
 
     items.map(move |item| {
-        let range = counter.span_to_range(text, item.span());
+        let range = counter.span_to_range(input, item.span());
         (range, item)
     })
 }

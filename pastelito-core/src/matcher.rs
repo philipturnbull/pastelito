@@ -7,8 +7,6 @@ use crate::block::{Block, Word};
 /// A pattern that matches a single word.
 pub trait SingleWordPattern: Send + Sync {
     /// Check if the pattern matches the given word.
-    ///
-    /// `data` is the underlying data of the document, not the word itself.
     fn matches_word(&self, word: &Word) -> bool;
 }
 
@@ -19,10 +17,14 @@ pub trait MultipleWordPattern {
 
     /// Check if the pattern matches the given words.
     ///
-    /// `data` is the underlying data of the document. `matched_words` is the
-    /// list of words that have been matched so far. If this pattern matches,
-    /// then the function should push the matched words to this list.
-    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize>;
+    /// `matched_words` is the list of words that have been matched so far. If
+    /// this pattern matches, then the function should push the matched words to
+    /// this list.
+    fn matches<'input>(
+        &self,
+        matched_words: &mut Vec<Word<'input>>,
+        words: &[Word<'input>],
+    ) -> Option<usize>;
 }
 
 /// A pattern that matches words based on their part of speech.
@@ -89,7 +91,11 @@ impl<P: SingleWordPattern> MultipleWordPattern for P {
         1
     }
 
-    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+    fn matches<'input>(
+        &self,
+        matched_words: &mut Vec<Word<'input>>,
+        words: &[Word<'input>],
+    ) -> Option<usize> {
         if let Some(word) = words.first() {
             if self.matches_word(word) {
                 matched_words.push(*word);
@@ -119,7 +125,11 @@ impl<P0: MultipleWordPattern, P1: MultipleWordPattern> MultipleWordPattern for (
         self.0.size_hint() + self.1.size_hint()
     }
 
-    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+    fn matches<'input>(
+        &self,
+        matched_words: &mut Vec<Word<'input>>,
+        words: &[Word<'input>],
+    ) -> Option<usize> {
         let original_len = matched_words.len();
 
         if let Some(next) = self.0.matches(matched_words, words) {
@@ -143,7 +153,11 @@ impl<P0: MultipleWordPattern, P1: MultipleWordPattern, P2: MultipleWordPattern> 
         self.0.size_hint() + self.1.size_hint() + self.2.size_hint()
     }
 
-    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+    fn matches<'input>(
+        &self,
+        matched_words: &mut Vec<Word<'input>>,
+        words: &[Word<'input>],
+    ) -> Option<usize> {
         let original_len = matched_words.len();
 
         if let Some(next) = self.0.matches(matched_words, words) {
@@ -174,7 +188,11 @@ impl<
         self.0.size_hint() + self.1.size_hint() + self.2.size_hint() + self.3.size_hint()
     }
 
-    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+    fn matches<'input>(
+        &self,
+        matched_words: &mut Vec<Word<'input>>,
+        words: &[Word<'input>],
+    ) -> Option<usize> {
         let original_len = matched_words.len();
 
         if let Some(next) = self.0.matches(matched_words, words) {
@@ -224,7 +242,11 @@ impl<L: MultipleWordPattern, R: MultipleWordPattern> MultipleWordPattern for Or<
     fn size_hint(&self) -> usize {
         std::cmp::max(self.0.size_hint(), self.1.size_hint())
     }
-    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+    fn matches<'input>(
+        &self,
+        matched_words: &mut Vec<Word<'input>>,
+        words: &[Word<'input>],
+    ) -> Option<usize> {
         if let Some(next) = self.0.matches(matched_words, words) {
             return Some(next);
         }
@@ -270,7 +292,11 @@ impl<P: MultipleWordPattern, const N: usize> MultipleWordPattern for OneOf<P, N>
             .unwrap_or(1)
     }
 
-    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+    fn matches<'input>(
+        &self,
+        matched_words: &mut Vec<Word<'input>>,
+        words: &[Word<'input>],
+    ) -> Option<usize> {
         for pattern in self.0.iter() {
             if let Some(next) = pattern.matches(matched_words, words) {
                 return Some(next);
@@ -290,7 +316,11 @@ impl<P: MultipleWordPattern> MultipleWordPattern for Opt<P> {
         self.0.size_hint()
     }
 
-    fn matches<'a>(&self, matched_words: &mut Vec<Word<'a>>, words: &[Word<'a>]) -> Option<usize> {
+    fn matches<'input>(
+        &self,
+        matched_words: &mut Vec<Word<'input>>,
+        words: &[Word<'input>],
+    ) -> Option<usize> {
         if let Some(next) = self.0.matches(matched_words, words) {
             return Some(next);
         }
@@ -349,10 +379,10 @@ impl<I: SingleWordPattern, P: MultipleWordPattern> Matcher for Ignore<I, P> {
 
 /// Find each sequence of words in `block` that match `pattern`, and call
 /// `on_match` with the matched words.
-pub fn match_words<'a, 'm, M>(
-    block: &Block<Word<'a>>,
+pub fn match_words<'input, 'm, M>(
+    block: &Block<Word<'input>>,
     matcher: &'m M,
-    mut on_match: impl FnMut(&[Word<'a>]),
+    mut on_match: impl FnMut(&[Word<'input>]),
 ) where
     M: Matcher,
 {

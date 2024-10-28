@@ -27,9 +27,9 @@ impl Default for PlaintextParser {
 }
 
 impl Parser for PlaintextParser {
-    fn parse<'a>(&self, data: &'a str) -> Vec<Block<Word<'a>>> {
+    fn parse<'input>(&self, input: &'input str) -> Vec<Block<Word<'input>>> {
         let mut blocks = Vec::new();
-        let mut span = FullByteSpan::of_document(data);
+        let mut span = FullByteSpan::of_document(input);
 
         loop {
             match span.split3("\n\n") {
@@ -37,7 +37,7 @@ impl Parser for PlaintextParser {
                     let prefix = prefix.skip_while(|c| c.is_whitespace());
                     if !prefix.is_empty() {
                         let block = Block::singleton(BlockKind::Paragraph, prefix.as_span());
-                        blocks.push(self.tokenizer.tokenize(data, block));
+                        blocks.push(self.tokenizer.tokenize(input, block));
                     }
                     span = suffix;
                 }
@@ -45,7 +45,7 @@ impl Parser for PlaintextParser {
                     let prefix = span.skip_while(|c| c.is_whitespace());
                     if !prefix.is_empty() {
                         let block = Block::singleton(BlockKind::Paragraph, prefix.as_span());
-                        blocks.push(self.tokenizer.tokenize(data, block));
+                        blocks.push(self.tokenizer.tokenize(input, block));
                     }
                     break;
                 }
@@ -62,9 +62,9 @@ mod tests {
 
     use super::*;
 
-    fn eq(data: &str, expected: Vec<Vec<&str>>) {
+    fn eq(input: &str, expected: Vec<Vec<&str>>) {
         let parser = PlaintextParser::default();
-        let doc = Document::new(&parser, data);
+        let doc = Document::new(&parser, input);
         let blocks: Vec<_> = doc
             .into_iter()
             .map(|block| {
@@ -78,7 +78,7 @@ mod tests {
             .into_iter()
             .map(|parts| (BlockKind::Paragraph, parts))
             .collect::<Vec<_>>();
-        assert_eq!(blocks, expected, "data={:?}", data);
+        assert_eq!(blocks, expected, "input={:?}", input);
     }
 
     #[test]

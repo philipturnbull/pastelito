@@ -8,14 +8,18 @@ pub struct Tokenizer {}
 
 impl Tokenizer {
     /// Tokenize the given block of `ByteSpan`s into a new block of `Word`s.
-    pub fn tokenize<'a>(&self, data: &'a str, block: Block<ByteSpan>) -> Block<Word<'a>> {
-        let mut words: Vec<Word<'a>> = Vec::new();
+    pub fn tokenize<'input>(
+        &self,
+        input: &'input str,
+        block: Block<ByteSpan>,
+    ) -> Block<Word<'input>> {
+        let mut words: Vec<Word<'input>> = Vec::new();
 
         let kind = block.kind();
 
         for token in block
             .into_iter()
-            .map(|span| FullByteSpan::<'a>::of_span(data, span))
+            .map(|span| FullByteSpan::<'input>::of_span(input, span))
         {
             for token in token.split_whitespace() {
                 words.extend(self.split(token));
@@ -26,10 +30,13 @@ impl Tokenizer {
     }
 
     /// Split a single span into one or more words.
-    fn split<'a>(&self, mut span: FullByteSpan<'a>) -> impl IntoIterator<Item = Word<'a>> {
+    fn split<'input>(
+        &self,
+        mut span: FullByteSpan<'input>,
+    ) -> impl IntoIterator<Item = Word<'input>> {
         // Most words are short, so we use a SmallVec to avoid heap allocations.
-        let mut words: SmallVec<[Word<'a>; 4]> = SmallVec::new();
-        let mut suffixes: SmallVec<[Word<'a>; 4]> = SmallVec::new();
+        let mut words: SmallVec<[Word<'input>; 4]> = SmallVec::new();
+        let mut suffixes: SmallVec<[Word<'input>; 4]> = SmallVec::new();
 
         // First, strip off any prefixes from the start of the span.
         while let Some((prefix, suffix)) = Tokenizer::has_prefix(span) {
@@ -91,12 +98,12 @@ mod tests {
     use super::*;
     use crate::block::BlockKind;
 
-    fn eq(data: &str, expected: Vec<&str>) {
-        let span = FullByteSpan::of_document(data);
+    fn eq(input: &str, expected: Vec<&str>) {
+        let span = FullByteSpan::of_document(input);
         let block = Block::singleton(BlockKind::Paragraph, span.as_span());
 
         let tokenizer = Tokenizer {};
-        let words = tokenizer.tokenize(data, block);
+        let words = tokenizer.tokenize(input, block);
 
         let words = words
             .iter()

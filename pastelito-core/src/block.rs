@@ -16,15 +16,15 @@ pub enum BlockKind {
 
 /// A word in a block of text.
 #[derive(Copy, Debug, Clone, Eq, PartialEq)]
-pub struct Word<'a> {
-    str: &'a str,
+pub struct Word<'input> {
+    str: &'input str,
     offset: usize,
     pos: Option<POS>,
 }
 
-impl<'a> Word<'a> {
+impl<'input> Word<'input> {
     /// Create a new word with an unknown part of speech.
-    pub fn new(str: &'a str, offset: usize) -> Self {
+    pub fn new(str: &'input str, offset: usize) -> Self {
         Word {
             str,
             offset,
@@ -33,7 +33,7 @@ impl<'a> Word<'a> {
     }
 
     /// Create a new word with a known part of speech.
-    pub fn new_with_pos(str: &'a str, offset: usize, pos: POS) -> Self {
+    pub fn new_with_pos(str: &'input str, offset: usize, pos: POS) -> Self {
         Word {
             str,
             offset,
@@ -46,12 +46,12 @@ impl<'a> Word<'a> {
         self.offset
     }
 
-    /// Get the word as a string slice from `data`.
+    /// Get the word as a string slice from the input data.
     ///
-    /// This assumes that `span` is a valid span in `data`. If this span was not
-    /// built from `span` then incorrect results will be returned or the
-    /// function may panic.
-    pub fn as_str(&self) -> &'a str {
+    /// This assumes that `span` is a part of the input data. If this span was
+    /// not built from the input data then incorrect results will be returned or
+    /// the function may panic.
+    pub fn as_str(&self) -> &'input str {
         self.str
     }
 
@@ -81,8 +81,8 @@ impl<'a> Word<'a> {
     }
 }
 
-impl<'a> From<FullByteSpan<'a>> for Word<'a> {
-    fn from(span: FullByteSpan<'a>) -> Self {
+impl<'input> From<FullByteSpan<'input>> for Word<'input> {
+    fn from(span: FullByteSpan<'input>) -> Self {
         Word::new(span.as_str(), span.as_span().start())
     }
 }
@@ -159,25 +159,25 @@ impl Block<Word<'_>> {
     /// The words are separated by spaces and the correct byte spans are calculated.
     #[cfg(test)]
     pub(crate) fn with_testing_block(words: &[(&str, POS)], cb: impl Fn(Block<Word<'static>>)) {
-        let mut data = String::new();
+        let mut input = String::new();
 
         let mut ranges = Vec::new();
 
         for (word, pos) in words {
-            let start = data.len();
-            data.push_str(word);
-            let end = data.len();
-            data.push(' ');
+            let start = input.len();
+            input.push_str(word);
+            let end = input.len();
+            input.push(' ');
             ranges.push((start..end, *pos));
         }
 
         // FIXME: We have to leak the data here to make the lifetimes work. This
         // function is only available during testing, so this isn't an issue.
-        let data = Box::leak(data.into_boxed_str());
+        let input = Box::leak(input.into_boxed_str());
 
         let mut words = Vec::new();
         for (range, pos) in ranges {
-            let word = &data[range.clone()];
+            let word = &input[range.clone()];
             words.push(Word::new_with_pos(word, range.start, pos));
         }
 

@@ -472,8 +472,8 @@ mod tests {
 
     use crate::{ContextSuffix, ContextWord, Feature, POS};
 
-    fn eq(data: &str, expected: Feature) {
-        let actual: Feature = data.to_owned().into();
+    fn eq(str: &str, expected: Feature) {
+        let actual: Feature = str.to_owned().into();
         assert_eq!(actual, expected);
     }
 

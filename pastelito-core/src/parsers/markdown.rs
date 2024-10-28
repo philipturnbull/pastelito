@@ -39,17 +39,17 @@ impl BlockBuilder {
     }
 }
 
-struct ParseState<'a, 't> {
-    data: &'a str,
-    blocks: Vec<Block<Word<'a>>>,
+struct ParseState<'input, 't> {
+    input: &'input str,
+    blocks: Vec<Block<Word<'input>>>,
     stack: Vec<BlockBuilder>,
     tokenizer: &'t Tokenizer,
 }
 
-impl<'a, 't> ParseState<'a, 't> {
-    fn new(data: &'a str, tokenizer: &'t Tokenizer) -> Self {
+impl<'input, 't> ParseState<'input, 't> {
+    fn new(input: &'input str, tokenizer: &'t Tokenizer) -> Self {
         ParseState {
-            data,
+            input,
             blocks: Vec::new(),
             stack: Vec::new(),
             tokenizer,
@@ -76,7 +76,7 @@ impl<'a, 't> ParseState<'a, 't> {
         let block = self.stack.pop().expect("stack should not be empty");
         if !block.is_empty() {
             self.blocks
-                .push(self.tokenizer.tokenize(self.data, block.build()));
+                .push(self.tokenizer.tokenize(self.input, block.build()));
         }
     }
 
@@ -85,7 +85,7 @@ impl<'a, 't> ParseState<'a, 't> {
         block.spans.push(span);
     }
 
-    fn finish(self) -> Vec<Block<Word<'a>>> {
+    fn finish(self) -> Vec<Block<Word<'input>>> {
         if self.stack.is_empty() {
             self.blocks
         } else {
@@ -113,9 +113,9 @@ impl Default for MarkdownParser {
 }
 
 impl Parser for MarkdownParser {
-    fn parse<'a>(&self, data: &'a str) -> Vec<Block<Word<'a>>> {
+    fn parse<'input>(&self, input: &'input str) -> Vec<Block<Word<'input>>> {
         let parser = CmarkParser::new_ext(
-            data,
+            input,
             Options::ENABLE_TABLES
                 | Options::ENABLE_FOOTNOTES
                 | Options::ENABLE_STRIKETHROUGH
@@ -127,7 +127,7 @@ impl Parser for MarkdownParser {
                 | Options::ENABLE_GFM
                 | Options::ENABLE_DEFINITION_LIST,
         );
-        let mut state = ParseState::new(data, &self.tokenizer);
+        let mut state = ParseState::new(input, &self.tokenizer);
 
         // Should we ignore any text events? This is used to skip some sections
         // of the document that aren't prose. For example, code blocks.
@@ -180,14 +180,14 @@ impl Parser for MarkdownParser {
                         match text {
                             CowStr::Borrowed(_) => {
                                 state.push_span(
-                                    FullByteSpan::of_range(data, range).trim().as_span(),
+                                    FullByteSpan::of_range(input, range).trim().as_span(),
                                 );
                             }
                             CowStr::Inlined(_) => {
                                 // This happens when the text contains escape
                                 // sequences. Just use the escaped text.
                                 state.push_span(
-                                    FullByteSpan::of_range(data, range).trim().as_span(),
+                                    FullByteSpan::of_range(input, range).trim().as_span(),
                                 );
                             }
                             _ => panic!("text range is not borrowed"),
@@ -208,9 +208,9 @@ mod tests {
 
     use super::*;
 
-    fn eq(data: &str, expected: Vec<(BlockKind, Vec<&str>)>) {
+    fn eq(input: &str, expected: Vec<(BlockKind, Vec<&str>)>) {
         let parser = MarkdownParser::default();
-        let doc = Document::new(&parser, data);
+        let doc = Document::new(&parser, input);
 
         let blocks: Vec<_> = doc
             .into_iter()
@@ -221,7 +221,7 @@ mod tests {
                 )
             })
             .collect();
-        assert_eq!(blocks, expected, "data={:?}", data);
+        assert_eq!(blocks, expected, "input={:?}", input);
     }
 
     fn p(strs: Vec<&str>) -> (BlockKind, Vec<&str>) {

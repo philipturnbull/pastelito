@@ -55,8 +55,8 @@ impl ByteSpan {
     }
 
     #[inline(always)]
-    pub fn as_str<'a>(&self, data: &'a str) -> &'a str {
-        &data[self.start.0..self.end.0]
+    pub fn as_str<'input>(&self, input: &'input str) -> &'input str {
+        &input[self.start.0..self.end.0]
     }
 
     /// Is this span empty?
@@ -83,29 +83,29 @@ impl ByteSpan {
 /// offsets automatically and should be used instead of standard methods like
 /// `String::split_at`.
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct FullByteSpan<'a> {
-    data: &'a str,
+pub struct FullByteSpan<'input> {
+    input: &'input str,
     span: ByteSpan,
 }
 
-impl<'a> FullByteSpan<'a> {
+impl<'input> FullByteSpan<'input> {
     #[inline]
     fn check_state(&self) {
         self.span.check_state();
         assert!(
-            self.span.end.0 <= self.data.len(),
+            self.span.end.0 <= self.input.len(),
             "{} <= {}",
             self.span.end.0,
-            self.data.len()
+            self.input.len()
         );
     }
 
     /// Create a new span from the given start and end byte offsets.
     ///
     /// Internal use only.
-    fn new(data: &'a str, start: ByteOffset, end: ByteOffset) -> Self {
+    fn new(input: &'input str, start: ByteOffset, end: ByteOffset) -> Self {
         let ret = FullByteSpan {
-            data,
+            input,
             span: ByteSpan::new(start, end),
         };
         ret.check_state();
@@ -113,22 +113,23 @@ impl<'a> FullByteSpan<'a> {
     }
 
     /// Create a new span from the entire document.
-    pub fn of_document(data: &'a str) -> Self {
-        FullByteSpan::of_range(data, 0..data.len())
+    pub fn of_document(input: &'input str) -> Self {
+        FullByteSpan::of_range(input, 0..input.len())
     }
 
     /// Convert a `ByteSpan` to a `FullByteSpan`.
     ///
-    /// `data` must be the same as the data that `span` was created from.
-    pub fn of_span(data: &'a str, span: ByteSpan) -> Self {
-        FullByteSpan { data, span }
+    /// `input` must be the same as the input data that `span` was created from.
+    pub fn of_span(input: &'input str, span: ByteSpan) -> Self {
+        FullByteSpan { input, span }
     }
 
     /// Convert a `Range` to a `FullByteSpan`.
     ///
-    /// `data` must be the same as the data that `range` was created from.
-    pub fn of_range(data: &'a str, range: Range<usize>) -> Self {
-        FullByteSpan::new(data, ByteOffset(range.start), ByteOffset(range.end))
+    /// `input` must be the same as the input data that `range` was created
+    /// from.
+    pub fn of_range(input: &'input str, range: Range<usize>) -> Self {
+        FullByteSpan::new(input, ByteOffset(range.start), ByteOffset(range.end))
     }
 
     /// Convert a `FullByteSpan` to a `ByteSpan`.
@@ -137,9 +138,9 @@ impl<'a> FullByteSpan<'a> {
     }
 
     /// Create a new span from the given start and end byte offsets, with the
-    /// same underlying data.
+    /// same underlying input data.
     fn adjust(&self, start: ByteOffset, end: ByteOffset) -> Self {
-        FullByteSpan::new(self.data, start, end)
+        FullByteSpan::new(self.input, start, end)
     }
 
     /// Is this span empty?
@@ -148,8 +149,8 @@ impl<'a> FullByteSpan<'a> {
     }
 
     /// Get the string representation of this span.
-    pub fn as_str(&self) -> &'a str {
-        self.span.as_str(self.data)
+    pub fn as_str(&self) -> &'input str {
+        self.span.as_str(self.input)
     }
 
     /// Get the first character of this span.
@@ -269,26 +270,28 @@ impl<'a> FullByteSpan<'a> {
     }
 
     /// Split this span into whitespace-separated parts.
-    pub fn split_whitespace<'b>(&'b self) -> impl Iterator<Item = FullByteSpan<'a>> + use<'a, 'b> {
+    pub fn split_whitespace<'a>(
+        &'a self,
+    ) -> impl Iterator<Item = FullByteSpan<'input>> + use<'input, 'a> {
         SplitWhitespaceIterator {
-            data: self.data,
+            input: self.input,
             sw: self.as_str().split_whitespace(),
         }
     }
 }
 
-struct SplitWhitespaceIterator<'a, 'b> {
-    data: &'a str,
-    sw: SplitWhitespace<'b>,
+struct SplitWhitespaceIterator<'input, 'a> {
+    input: &'input str,
+    sw: SplitWhitespace<'a>,
 }
 
-impl<'a> Iterator for SplitWhitespaceIterator<'a, '_> {
-    type Item = FullByteSpan<'a>;
+impl<'input> Iterator for SplitWhitespaceIterator<'input, '_> {
+    type Item = FullByteSpan<'input>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.sw
             .next()
-            .map(|s| FullByteSpan::of_span(self.data, ByteSpan::new_in_str(self.data, s)))
+            .map(|str| FullByteSpan::of_span(self.input, ByteSpan::new_in_str(self.input, str)))
     }
 }
 
@@ -298,14 +301,14 @@ impl From<FullByteSpan<'_>> for ByteSpan {
     }
 }
 
-impl<'a> From<FullByteSpan<'a>> for (&'a str, ByteSpan) {
-    fn from(span: FullByteSpan<'a>) -> Self {
-        (span.data, span.span)
+impl<'input> From<FullByteSpan<'input>> for (&'input str, ByteSpan) {
+    fn from(span: FullByteSpan<'input>) -> Self {
+        (span.input, span.span)
     }
 }
 
-impl<'a> From<&[Word<'a>]> for ByteSpan {
-    fn from(words: &[Word<'a>]) -> Self {
+impl<'input> From<&[Word<'input>]> for ByteSpan {
+    fn from(words: &[Word<'input>]) -> Self {
         if words.is_empty() {
             panic!("Cannot create a span from an empty list of words");
         }
@@ -417,14 +420,14 @@ mod tests {
 
     #[test]
     fn test_split_whitespace() {
-        let data = " Mary   had\ta\u{2009}little  \n\t lamb";
-        let span = of(data);
+        let input = " Mary   had\ta\u{2009}little  \n\t lamb";
+        let span = of(input);
         let tokens = span.split_whitespace().collect::<Vec<_>>();
         let tokens = tokens.iter().map(|span| span.as_str()).collect::<Vec<_>>();
         assert_eq!(tokens, vec!["Mary", "had", "a", "little", "lamb"]);
 
-        let data = " abc";
-        let span = of(data);
+        let input = " abc";
+        let span = of(input);
         let span = span.skip_while(|c| c.is_whitespace());
         let tokens = span.split_whitespace().collect::<Vec<_>>();
         let tokens = tokens.iter().map(|span| span.as_str()).collect::<Vec<_>>();

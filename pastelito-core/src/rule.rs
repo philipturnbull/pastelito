@@ -113,9 +113,9 @@ impl quickcheck::Arbitrary for MeasureKey {
 
 /// An instance of a measurement.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Measurement<'a> {
+pub struct Measurement<'input> {
     /// The word that was measured.
-    pub word: Word<'a>,
+    pub word: Word<'input>,
     /// The key for the measurement.
     pub key: MeasureKey,
 }
@@ -135,9 +135,9 @@ impl Ord for Measurement<'_> {
     }
 }
 
-impl<'a> Measurement<'a> {
+impl<'input> Measurement<'input> {
     /// Create a new measurement.
-    fn new(key: MeasureKey, word: Word<'a>) -> Self {
+    fn new(key: MeasureKey, word: Word<'input>) -> Self {
         Measurement { word, key }
     }
 }
@@ -150,17 +150,17 @@ impl HasSpan for &Measurement<'_> {
 
 /// Build a set of measurements for a single document.
 #[derive(Debug, Default)]
-pub struct MeasurementsBuilder<'a> {
-    measurements: HashMap<MeasureKey, Vec<Word<'a>>>,
+pub struct MeasurementsBuilder<'input> {
+    measurements: HashMap<MeasureKey, Vec<Word<'input>>>,
 }
 
-impl<'a> MeasurementsBuilder<'a> {
+impl<'input> MeasurementsBuilder<'input> {
     /// Add a new measurement to the builder.
-    pub fn add_measurement(&mut self, key: MeasureKey, word: &Word<'a>) {
+    pub fn add_measurement(&mut self, key: MeasureKey, word: &Word<'input>) {
         self.measurements.entry(key).or_default().push(*word);
     }
 
-    fn build(self) -> Vec<Measurement<'a>> {
+    fn build(self) -> Vec<Measurement<'input>> {
         let mut measurements = self
             .measurements
             .into_iter()
@@ -177,24 +177,24 @@ impl<'a> MeasurementsBuilder<'a> {
 
 /// A builder for `Results`.
 #[derive(Debug)]
-struct ResultsBuilder<'a> {
-    data: &'a str,
+struct ResultsBuilder<'input> {
+    input: &'input str,
     warnings_builder: WarningsBuilder,
-    measurements_builder: MeasurementsBuilder<'a>,
+    measurements_builder: MeasurementsBuilder<'input>,
 }
 
-impl<'a> ResultsBuilder<'a> {
-    fn new(data: &'a str) -> Self {
+impl<'input> ResultsBuilder<'input> {
+    fn new(input: &'input str) -> Self {
         ResultsBuilder {
-            data,
+            input,
             warnings_builder: WarningsBuilder::default(),
             measurements_builder: MeasurementsBuilder::default(),
         }
     }
 
-    fn build(self) -> Results<'a> {
+    fn build(self) -> Results<'input> {
         Results {
-            data: self.data,
+            input: self.input,
             warnings: self.warnings_builder.build(),
             measurements: self.measurements_builder.build(),
         }
@@ -203,13 +203,13 @@ impl<'a> ResultsBuilder<'a> {
 
 /// The results of applying rules and measures to a document.
 #[derive(Debug, Default, Clone)]
-pub struct Results<'a> {
-    data: &'a str,
+pub struct Results<'input> {
+    input: &'input str,
     warnings: Vec<Warning>,
-    measurements: Vec<Measurement<'a>>,
+    measurements: Vec<Measurement<'input>>,
 }
 
-impl<'a> Results<'a> {
+impl<'input> Results<'input> {
     /// Iterate over the warnings.
     ///
     /// Warnings are ordered by their span in ascending order.
@@ -221,13 +221,13 @@ impl<'a> Results<'a> {
     ///
     /// Warnings are ordered by their span in ascending order.
     pub fn iter_warnings_with_ranges(&self) -> impl Iterator<Item = (LineCharRange, &Warning)> {
-        spans_to_ranges(self.data, self.warnings.iter())
+        spans_to_ranges(self.input, self.warnings.iter())
     }
 
     /// Iterate over the measurements.
     ///
     /// Measurements are ordered by the word in ascending order, and then by the `MeasureKey`.
-    pub fn iter_measurements(&self) -> impl Iterator<Item = &Measurement<'a>> {
+    pub fn iter_measurements(&self) -> impl Iterator<Item = &Measurement<'input>> {
         self.measurements.iter()
     }
 
@@ -236,8 +236,8 @@ impl<'a> Results<'a> {
     /// Measurements are ordered by the word in ascending order, and then by the `MeasureKey`.
     pub fn iter_measurements_with_ranges(
         &self,
-    ) -> impl Iterator<Item = (LineCharRange, &Measurement<'a>)> {
-        spans_to_ranges(self.data, self.measurements.iter())
+    ) -> impl Iterator<Item = (LineCharRange, &Measurement<'input>)> {
+        spans_to_ranges(self.input, self.measurements.iter())
     }
 }
 
@@ -310,7 +310,11 @@ struct MeasureInstance {
 }
 
 impl MeasureInstance {
-    fn apply<'a>(&self, doc: &Document<'a>, measurements: &mut MeasurementsBuilder<'a>) {
+    fn apply<'input>(
+        &self,
+        doc: &Document<'input>,
+        measurements: &mut MeasurementsBuilder<'input>,
+    ) {
         for block in doc.iter() {
             for word in block.as_slice() {
                 if self.pattern.matches_word(word) {
@@ -341,10 +345,10 @@ impl RuleSet {
     }
 
     /// Apply the rules and measures to the document, returning the results.
-    pub fn apply<'a>(&self, doc: &Document<'a>) -> Results<'a> {
+    pub fn apply<'input>(&self, doc: &Document<'input>) -> Results<'input> {
         let apply_span = debug_span!("RuleSet::apply");
         apply_span.in_scope(|| {
-            let mut results = ResultsBuilder::new(doc.data());
+            let mut results = ResultsBuilder::new(doc.input());
 
             for rule in &self.rules {
                 rule.apply(doc, &mut results.warnings_builder);
@@ -376,30 +380,30 @@ pub(crate) mod test {
 
     use super::WarningBuilder;
 
-    pub(crate) fn rule_eq<R: Rule + 'static>(rule: R, data: &str, expected: usize) {
-        let doc = Document::new(&PlaintextParser::default(), data);
+    pub(crate) fn rule_eq<R: Rule + 'static>(rule: R, input: &str, expected: usize) {
+        let doc = Document::new(&PlaintextParser::default(), input);
         let ruleset = RuleSet::new(vec![Box::new(rule)], Vec::new());
         let results = ruleset.apply(&doc);
         assert_eq!(
             results.iter_warnings().count(),
             expected,
-            "\n\ndata={:?}\n\ndoc={:#?}\n\nresults={:#?}",
-            data,
+            "\n\ninput={:?}\n\ndoc={:#?}\n\nresults={:#?}",
+            input,
             doc,
             results
         );
     }
 
-    pub(crate) fn measure_eq<M: Measure + 'static>(measure: M, data: &str, expected: usize) {
-        let doc = Document::new(&PlaintextParser::default(), data);
+    pub(crate) fn measure_eq<M: Measure + 'static>(measure: M, input: &str, expected: usize) {
+        let doc = Document::new(&PlaintextParser::default(), input);
         let ruleset = RuleSet::new(Vec::new(), vec![Box::new(measure)]);
         let results = ruleset.apply(&doc);
         let measurements = results.iter_measurements().collect::<Vec<_>>();
         assert_eq!(
             measurements.len(),
             expected,
-            "\n\ndata={:?}\n\ndoc={:#?}\n\nmeasurements={:#?}",
-            data,
+            "\n\ninput={:?}\n\ndoc={:#?}\n\nmeasurements={:#?}",
+            input,
             doc,
             measurements
         );
