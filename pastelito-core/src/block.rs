@@ -152,36 +152,51 @@ impl<T> IntoIterator for Block<T> {
     }
 }
 
-impl Block<Word<'_>> {
-    /// A helper function to create a `Block` from a list of words and call `cb`
-    /// with the result.
-    ///
-    /// The words are separated by spaces and the correct byte spans are calculated.
-    #[cfg(test)]
-    pub(crate) fn with_testing_block(words: &[(&str, POS)], cb: impl Fn(Block<Word<'static>>)) {
-        let mut input = String::new();
+#[cfg(test)]
+pub(crate) mod test {
+    use std::ops::Range;
 
+    use pastelito_data::POS;
+
+    use super::{Block, BlockKind, Word};
+
+    fn join_words(words: &[(&str, POS)]) -> (String, Vec<(Range<usize>, POS)>) {
+        let mut input = String::new();
         let mut ranges = Vec::new();
 
         for (word, pos) in words {
             let start = input.len();
             input.push_str(word);
             let end = input.len();
-            input.push(' ');
+
             ranges.push((start..end, *pos));
+            input.push(' ');
         }
 
-        // FIXME: We have to leak the data here to make the lifetimes work. This
-        // function is only available during testing, so this isn't an issue.
-        let input = Box::leak(input.into_boxed_str());
+        (input, ranges)
+    }
 
+    fn with_words<'input>(
+        input: &'input str,
+        ranges: &[(Range<usize>, POS)],
+        cb: impl Fn(Block<Word<'input>>),
+    ) {
         let mut words = Vec::new();
         for (range, pos) in ranges {
             let word = &input[range.clone()];
-            words.push(Word::new_with_pos(word, range.start, pos));
+            words.push(Word::new_with_pos(word, range.start, *pos));
         }
 
         let block = Block::new(BlockKind::Paragraph, words);
         cb(block);
+    }
+
+    /// A helper function to create a `Block` from a list of words and call `cb`
+    /// with the result.
+    ///
+    /// The words are separated by spaces and the correct byte spans are calculated.
+    pub(crate) fn with_testing_block(words: &[(&str, POS)], cb: impl Fn(Block<Word>)) {
+        let (input, ranges) = join_words(words);
+        with_words(input.as_str(), &ranges, cb);
     }
 }

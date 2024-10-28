@@ -434,7 +434,7 @@ pub fn match_words<'input, 'm, M>(
 mod tests {
     use pastelito_data::POS;
 
-    use crate::{block::Block, matcher::match_words};
+    use crate::{block::test::with_testing_block, matcher::match_words};
 
     use super::{Any, Ignore, Lowercase, Matcher, Opt, Or, PosFn};
 
@@ -452,7 +452,7 @@ mod tests {
             (".", POS::EndOfSentence),
         ];
 
-        Block::with_testing_block(words, |block| {
+        with_testing_block(words, |block| {
             let mut matches: Vec<Vec<&str>> = Vec::new();
 
             match_words(&block, &pattern, |words| {

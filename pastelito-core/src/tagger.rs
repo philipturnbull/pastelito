@@ -76,14 +76,14 @@ impl Tagger {
 mod tests {
     use super::*;
     use crate::{
-        block::BlockKind,
+        block::{test::with_testing_block, BlockKind},
         span::{ByteSpan, FullByteSpan},
     };
     use serde_json::Value;
     use std::{fs::File, str::FromStr as _};
 
     fn eq(words: &[(&str, POS)]) {
-        Block::with_testing_block(words, |block| {
+        with_testing_block(words, |block| {
             let mut unknown_block = Block::new(
                 block.kind(),
                 block
