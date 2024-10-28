@@ -1,4 +1,5 @@
-target
+target/
+pastelito-vscode/target-wasm/
 
 pastelito-vscode/node_modules/
 pastelito-vscode/out/

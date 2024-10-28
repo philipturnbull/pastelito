@@ -1,0 +1,31 @@
+package vscode:pastelito;
+
+interface types {
+    record range {
+        start-line: u32,
+        start-char: u32,
+        end-line: u32,
+        end-char: u32,
+    }
+
+    record warning {
+        message: string,
+        range: range,
+    }
+
+    record measurement {
+        key: string,
+        range: range,
+    }
+
+    record results {
+        warnings: list<warning>,
+        measurements: list<measurement>,
+    }
+}
+
+world pastelito {
+    use types.{ results };
+
+    export apply-default-rules: func(input: string) -> results;
+}

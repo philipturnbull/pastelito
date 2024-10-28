@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { Theme } from './theme';
-import { hoverMessageFor, Measurement, MEASUREMENT_TYPES, MeasurementType } from './core';
+import { hoverMessageFor, Measurement, MEASUREMENT_KEYS, MeasurementKey } from './core';
+import { Types } from './pastelito';
 
 interface RenderOptions {
     renderOptions(): vscode.DecorationRenderOptions;
@@ -32,7 +33,7 @@ class Matcher implements vscode.Disposable {
     public decorationType: vscode.TextEditorDecorationType;
 
     constructor(
-        public measurementType: MeasurementType,
+        public measurementType: MeasurementKey,
         public hoverMessage: string,
         renderOptions: RenderOptions
     ) {
@@ -42,7 +43,7 @@ class Matcher implements vscode.Disposable {
     }
 
     decorationFor(measurement: Measurement): DecorationMatch | undefined {
-        if (measurement.type === this.measurementType) {
+        if (measurement.key === this.measurementType) {
             return {
                 decorationType: this.decorationType,
                 decorationOptions: {
@@ -70,7 +71,7 @@ class Matchers implements vscode.Disposable {
     private matchers: Matcher[];
 
     public constructor(theme: Theme) {
-        this.matchers = MEASUREMENT_TYPES.map(
+        this.matchers = MEASUREMENT_KEYS.map(
             (type) =>
                 new Matcher(
                     type,
@@ -173,6 +174,12 @@ export class MeasurementsDisplay implements vscode.Disposable {
     // Main entry-point, called when we receive diagnostics from the server.
     handleDiagnostics(uri: vscode.Uri, diagnostics: vscode.Diagnostic[]) {
         this.cache.set(uri.toString(), diagnostics.map(Measurement.fromDiagnostic));
+
+        this.applyDiagnosticsToUri(uri);
+    }
+
+    handleResults(uri: vscode.Uri, results: Types.Measurement[]) {
+        this.cache.set(uri.toString(), results.map(Measurement.fromWASM));
 
         this.applyDiagnosticsToUri(uri);
     }

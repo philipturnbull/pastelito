@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { MeasurementType } from './core';
+import { MeasurementKey } from './core';
 
 export class Theme {
-    private colors = new Map<MeasurementType, string>();
+    private colors = new Map<MeasurementKey, string>();
 
     constructor(
         public name: string,
@@ -21,7 +21,7 @@ export class Theme {
         this.colors.set('prepositions', colors.prepositions);
     }
 
-    colorFor(measurement: MeasurementType): string {
+    colorFor(measurement: MeasurementKey): string {
         return this.colors.get(measurement)!;
     }
 

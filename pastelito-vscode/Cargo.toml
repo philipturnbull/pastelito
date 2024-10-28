@@ -1,0 +1,11 @@
+[package]
+name = "pastelito-vscode"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+pastelito-core = { version = "0.1.0", path = "../pastelito-core" }
+wit-bindgen = "0.34.0"

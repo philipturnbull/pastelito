@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
+import { Types } from './pastelito';
 
-export type MeasurementType =
+export type MeasurementKey =
     'abstract-nouns' |
     'academic-ad-words' |
     'adjectives' |
@@ -10,7 +11,7 @@ export type MeasurementType =
 // The order of this array is important. It defines the precedence of the
 // types. If a word has multiple types, the first one in this array will be
 // used for highlighting.
-export const MEASUREMENT_TYPES: MeasurementType[] = [
+export const MEASUREMENT_KEYS: MeasurementKey[] = [
     'abstract-nouns',
     'academic-ad-words',
     'adjectives',
@@ -18,7 +19,7 @@ export const MEASUREMENT_TYPES: MeasurementType[] = [
     'prepositions'
 ];
 
-const HOVER_MESSAGES = new Map<MeasurementType, string>([
+const HOVER_MESSAGES = new Map<MeasurementKey, string>([
     ['abstract-nouns', 'abstract noun'],
     ['academic-ad-words', 'academic adjective/adverb'],
     ['adjectives', 'adjective/adverb'],
@@ -26,17 +27,27 @@ const HOVER_MESSAGES = new Map<MeasurementType, string>([
     ['prepositions', 'preposition'],
 ]);
 
-export function hoverMessageFor(measurement: MeasurementType): string {
+export function hoverMessageFor(measurement: MeasurementKey): string {
     return HOVER_MESSAGES.get(measurement)!;
 }
 
 export class Measurement {
     constructor(
-        public readonly type: MeasurementType,
+        public readonly key: MeasurementKey,
         public readonly range: vscode.Range,
     ) { }
 
     static fromDiagnostic(diagnostic: vscode.Diagnostic): Measurement {
-        return new Measurement(diagnostic.code as MeasurementType, diagnostic.range);
+        return new Measurement(diagnostic.code as MeasurementKey, diagnostic.range);
+    }
+
+    static fromWASM(measurement: Types.Measurement): Measurement {
+        const range = new vscode.Range(
+            measurement.range.startLine,
+            measurement.range.startChar,
+            measurement.range.endLine,
+            measurement.range.endChar
+        );
+        return new Measurement(measurement.key as MeasurementKey, range);
     }
 }
