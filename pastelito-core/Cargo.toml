@@ -16,7 +16,6 @@ lazy-regex = "3.3.0"
 strum_macros = "0.26.4"
 
 [dev-dependencies]
-clap = { version = "4.5.20", features = ["derive"] }
 criterion = "0.5.1"
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"

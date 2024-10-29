@@ -1,4 +1,3 @@
-use clap::Parser;
 use pastelito_core::parsers::MarkdownParser;
 use pastelito_core::rule::RuleSet;
 use pastelito_core::Document;
@@ -6,23 +5,52 @@ use std::io::Read;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
 
-/// Example CLI for pastelito-core
-#[derive(Parser)]
+const HELP: &str = r#"Example CLI for pastelito-core
+
+Usage: cli [OPTIONS] [FILENAME]
+
+Arguments:
+  [FILENAME] Input filename. If not provided, read from stdin
+
+Options:
+      --debug  Enable tracing debug output
+      --quiet  Do not print results
+  -h, --help   Print help"#;
+
+#[derive(Default)]
 struct Args {
-    /// Enable tracing debug output
-    #[clap(long)]
     debug: bool,
-
-    /// Do not print results
-    #[clap(long)]
     quiet: bool,
-
-    /// Input filename. If not provided, read from stdin
     filename: Option<std::path::PathBuf>,
 }
 
+fn parse_args() -> Args {
+    let mut args = Args::default();
+
+    for arg in std::env::args() {
+        match arg.as_str() {
+            "--debug" => args.debug = true,
+            "--quiet" => args.quiet = true,
+            "-h" | "--help" => {
+                println!("{}", HELP);
+                std::process::exit(0);
+            }
+            _ => {
+                if arg.starts_with('-') {
+                    eprintln!("Unknown option: {}", arg);
+                    std::process::exit(1);
+                } else {
+                    args.filename = Some(std::path::PathBuf::from(arg));
+                }
+            }
+        }
+    }
+
+    args
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::parse();
+    let args = parse_args();
 
     if args.debug {
         let subscriber = tracing_subscriber::fmt()
