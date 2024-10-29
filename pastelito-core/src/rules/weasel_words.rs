@@ -1,7 +1,7 @@
 use pastelito_model::Tag;
 
 use crate::{
-    matcher::{AndS, Matcher, Regex},
+    matcher::{AndS, IgnoreCase, Matcher, OneOfS},
     rule::{MatcherRule, WarningBuilder, WarningsBuilder},
     Word,
 };
@@ -12,7 +12,25 @@ impl MatcherRule for WeaselWords {
     fn matcher() -> impl Matcher {
         AndS(
             Tag::Adverb,
-            Regex::new("(?i)^(absolutely|actually|basically|certainly|completely|definitely|easily|just|literally|probably|quite|rather|really|somehow|suddenly|totally|virtually)$"),
+            OneOfS([
+                IgnoreCase::new("absolutely"),
+                IgnoreCase::new("actually"),
+                IgnoreCase::new("basically"),
+                IgnoreCase::new("certainly"),
+                IgnoreCase::new("completely"),
+                IgnoreCase::new("definitely"),
+                IgnoreCase::new("easily"),
+                IgnoreCase::new("just"),
+                IgnoreCase::new("literally"),
+                IgnoreCase::new("probably"),
+                IgnoreCase::new("quite"),
+                IgnoreCase::new("rather"),
+                IgnoreCase::new("really"),
+                IgnoreCase::new("somehow"),
+                IgnoreCase::new("suddenly"),
+                IgnoreCase::new("totally"),
+                IgnoreCase::new("virtually"),
+            ]),
         )
     }
 

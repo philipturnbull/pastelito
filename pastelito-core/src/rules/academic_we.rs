@@ -1,7 +1,7 @@
 use pastelito_model::Tag;
 
 use crate::{
-    matcher::{Matcher, OneOfS, Regex},
+    matcher::{IgnoreCase, Matcher, OneOfS},
     rule::{MatcherRule, WarningBuilder, WarningsBuilder},
     Word,
 };
@@ -11,7 +11,7 @@ pub struct AcademicWe;
 impl MatcherRule for AcademicWe {
     fn matcher() -> impl Matcher {
         (
-            Regex::new(r"(?i)^we$"),
+            IgnoreCase::new("we"),
             Tag::Modal,
             OneOfS([
                 Tag::VerbBaseForm,

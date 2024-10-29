@@ -458,7 +458,6 @@ dependencies = [
  "pulldown-cmark",
  "quickcheck",
  "quickcheck_macros",
- "regex",
  "serde_json",
  "smallvec",
  "strum",

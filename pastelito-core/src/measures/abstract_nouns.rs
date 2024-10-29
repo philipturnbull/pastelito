@@ -1,7 +1,7 @@
 use pastelito_model::Tag;
 
 use crate::{
-    matcher::{AndS, OneOfS, Regex, SingleWordPattern},
+    matcher::{AndS, EndsWithIgnoreCase, OneOfS, SingleWordPattern},
     rule::{Measure, MeasureKey},
 };
 
@@ -20,7 +20,18 @@ impl Measure for AbstractNouns {
                 Tag::ProperNounSingular,
                 Tag::ProperNounPlural,
             ]),
-            Regex::new(r"(?i)\w(ance|ence|ences|ion|ions|ism|isms|ment|ty|ties)$"),
+            OneOfS([
+                EndsWithIgnoreCase::new("ance"),
+                EndsWithIgnoreCase::new("ence"),
+                EndsWithIgnoreCase::new("ences"),
+                EndsWithIgnoreCase::new("ion"),
+                EndsWithIgnoreCase::new("ions"),
+                EndsWithIgnoreCase::new("ism"),
+                EndsWithIgnoreCase::new("isms"),
+                EndsWithIgnoreCase::new("ment"),
+                EndsWithIgnoreCase::new("ty"),
+                EndsWithIgnoreCase::new("ties"),
+            ]),
         ))
     }
 }

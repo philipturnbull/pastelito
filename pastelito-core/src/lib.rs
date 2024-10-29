@@ -1,5 +1,6 @@
 #![feature(ascii_char)]
 #![feature(ascii_char_variants)]
+#![feature(iter_order_by)]
 
 #[cfg(test)]
 #[macro_use(quickcheck)]

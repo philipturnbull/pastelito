@@ -8,7 +8,6 @@ pulldown-cmark = "0.12.1"
 smallvec = "1.13.2"
 tracing = "0.1.40"
 pastelito-model = { path = "../pastelito-model" }
-regex = "1.11.0"
 strum = "0.26.3"
 strum_macros = "0.26.4"
 

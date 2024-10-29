@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use pastelito_model::Tag;
+use smallvec::SmallVec;
 
 use crate::block::{Block, Word};
 
@@ -50,20 +51,63 @@ impl SingleWordPattern for StrFn {
     }
 }
 
-/// A pattern that matches words using a regular expression.
+/// A pattern that matches words based on their string value, ignoring case.
+///
+/// Strings are compared using `eq_ignore_ascii_case`.
 #[derive(Clone)]
-pub struct Regex(regex::Regex);
+pub struct IgnoreCase {
+    str: &'static str,
+}
 
-impl Regex {
-    /// Create a new pattern from a regular expression.
-    pub fn new(regex: &str) -> Self {
-        Self(regex::Regex::new(regex).unwrap())
+impl IgnoreCase {
+    /// Create a new pattern.
+    pub fn new(str: &'static str) -> Self {
+        Self { str }
     }
 }
 
-impl SingleWordPattern for Regex {
+impl SingleWordPattern for IgnoreCase {
     fn matches_word(&self, word: &Word) -> bool {
-        self.0.is_match(word.as_str())
+        word.as_str().eq_ignore_ascii_case(self.str)
+    }
+}
+
+/// A pattern that matches words which end with an ASCII suffix, ignoring case.
+#[derive(Clone)]
+pub struct EndsWithIgnoreCase {
+    suffix_reversed: SmallVec<[char; 8]>,
+}
+
+impl EndsWithIgnoreCase {
+    /// Create a new pattern.
+    ///
+    /// This will panic if `suffix` contains any non-ASCII characters.
+    pub fn new(suffix: &'static str) -> Self {
+        let suffix_reversed: SmallVec<[char; 8]> = suffix.chars().rev().collect();
+
+        if suffix_reversed.iter().any(|c| !c.is_ascii()) {
+            panic!("EndsWithIgnoreCase only supports ASCII suffixes");
+        }
+
+        Self { suffix_reversed }
+    }
+}
+
+impl SingleWordPattern for EndsWithIgnoreCase {
+    fn matches_word(&self, word: &Word) -> bool {
+        let suffix_count = self.suffix_reversed.len();
+
+        if word.as_str().chars().count() > suffix_count {
+            word.as_str()
+                .chars()
+                .rev()
+                .take(suffix_count)
+                .eq_by(self.suffix_reversed.iter().copied(), |a, b| {
+                    a.eq_ignore_ascii_case(&b)
+                })
+        } else {
+            false
+        }
     }
 }
 
@@ -418,7 +462,7 @@ mod tests {
 
     use crate::{block::test::with_testing_block, matcher::match_words};
 
-    use super::{Any, Ignore, Matcher, Opt, Or, TagFn};
+    use super::{Any, EndsWithIgnoreCase, Ignore, IgnoreCase, Matcher, Opt, Or, TagFn};
 
     fn eq<P: Matcher>(pattern: P, expected: Vec<Vec<&str>>) {
         let words = &[
@@ -547,5 +591,27 @@ mod tests {
             ),
             vec![vec!["The", "cat", "sat", "on"]],
         );
+    }
+
+    #[test]
+    fn test_ignore_case() {
+        eq(IgnoreCase::new("the"), vec![vec!["The"], vec!["the"]]);
+        eq(IgnoreCase::new("BIG"), vec![vec!["big"]]);
+    }
+
+    #[test]
+    fn test_ends_with_ignore_case() {
+        eq(
+            EndsWithIgnoreCase::new("aT"),
+            vec![vec!["cat"], vec!["sat"], vec!["mat"]],
+        );
+
+        eq(EndsWithIgnoreCase::new("cat"), vec![])
+    }
+
+    #[should_panic]
+    #[test]
+    fn test_ends_with_ignore_case_non_ascii() {
+        let _ = EndsWithIgnoreCase::new("🦕");
     }
 }

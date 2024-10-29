@@ -1,5 +1,5 @@
 use crate::{
-    matcher::{Regex, SingleWordPattern},
+    matcher::{IgnoreCase, OneOfS, SingleWordPattern},
     rule::{Measure, MeasureKey},
 };
 
@@ -11,7 +11,16 @@ impl Measure for BeVerbs {
     }
 
     fn pattern(&self) -> Box<dyn SingleWordPattern> {
-        Box::new(Regex::new(r"(?i)^(am|are|be|been|being|is|was|were)$"))
+        Box::new(OneOfS([
+            IgnoreCase::new("am"),
+            IgnoreCase::new("are"),
+            IgnoreCase::new("be"),
+            IgnoreCase::new("been"),
+            IgnoreCase::new("being"),
+            IgnoreCase::new("is"),
+            IgnoreCase::new("was"),
+            IgnoreCase::new("were"),
+        ]))
     }
 }
 
