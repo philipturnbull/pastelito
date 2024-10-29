@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use pastelito_data::POS;
+use pastelito_model::POS;
 
 use crate::block::{Block, Word};
 
@@ -414,7 +414,7 @@ pub fn match_words<'input, 'm, M>(
 
 #[cfg(test)]
 mod tests {
-    use pastelito_data::POS;
+    use pastelito_model::POS;
 
     use crate::{block::test::with_testing_block, matcher::match_words};
 

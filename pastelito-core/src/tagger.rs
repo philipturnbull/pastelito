@@ -2,7 +2,7 @@ use crate::{
     block::{Block, Word},
     perceptron::Perceptron,
 };
-use pastelito_data::{Model, POS};
+use pastelito_model::{Model, POS};
 
 /// A part-of-speech tagger.
 pub struct Tagger {

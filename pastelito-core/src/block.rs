@@ -1,4 +1,4 @@
-use pastelito_data::POS;
+use pastelito_model::POS;
 #[allow(unused_imports)]
 use strum::VariantArray as _;
 
@@ -156,7 +156,7 @@ impl<T> IntoIterator for Block<T> {
 pub(crate) mod test {
     use std::ops::Range;
 
-    use pastelito_data::POS;
+    use pastelito_model::POS;
 
     use super::{Block, BlockKind, Word};
 

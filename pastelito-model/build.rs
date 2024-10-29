@@ -1,5 +1,13 @@
+#![feature(ascii_char)]
+// We're generating the `model.bin` file that is used in `src/model.rs`. At this
+// point, the crate hasn't been built yet but we need access to the definitions.
+// We directly include the file here instead.
+#[path = "src/data.rs"]
+#[allow(unused)]
+mod data;
+
+use data::{Feature, Model, Scores, WeightRange, POS};
 use fxhash::FxHashMap;
-use pastelito_data::{Feature, Model, Scores, WeightRange, POS};
 use serde_json::Value;
 use speedy::Writable as _;
 use std::path::PathBuf;

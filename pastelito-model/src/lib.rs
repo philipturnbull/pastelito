@@ -1,14 +1,10 @@
-//! The default model for the Pastelito tagger.
-use std::sync::OnceLock;
+//! The Pastelito model.
+#![feature(ascii_char)]
+mod data;
+mod model;
 
-use pastelito_data::Model;
-use speedy::Readable as _;
-
-static MODEL_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/model.bin"));
-
-static MODEL: OnceLock<Model> = OnceLock::new();
-
-/// Get the default model.
-pub fn get() -> &'static Model {
-    MODEL.get_or_init(|| Model::read_from_buffer(MODEL_BIN).unwrap())
-}
+// These definitions should just be declared at the top-level but we need to use
+// them as part of `build.rs`. Re-export them here so they appear at the
+// top-level.
+pub use data::{ContextSuffix, ContextWord, Feature, Model, Scores, WeightRange, POS};
+pub use model::get;

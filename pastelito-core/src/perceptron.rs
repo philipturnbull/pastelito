@@ -1,4 +1,4 @@
-use pastelito_data::{ContextWord, Feature, Model, POS};
+use pastelito_model::{ContextWord, Feature, Model, POS};
 use strum::EnumCount as _;
 
 use crate::block::{Block, Word};

@@ -806,7 +806,6 @@ dependencies = [
  "clap",
  "criterion",
  "lazy-regex",
- "pastelito-data",
  "pastelito-model",
  "pulldown-cmark",
  "quickcheck",
@@ -818,16 +817,6 @@ dependencies = [
  "strum",
  "tracing",
  "tracing-subscriber",
-]
-
-[[package]]
-name = "pastelito-data"
-version = "0.1.0"
-dependencies = [
- "fxhash",
- "speedy",
- "strum",
- "strum_macros",
 ]
 
 [[package]]
@@ -855,9 +844,10 @@ name = "pastelito-model"
 version = "0.1.0"
 dependencies = [
  "fxhash",
- "pastelito-data",
  "serde_json",
  "speedy",
+ "strum",
+ "strum_macros",
 ]
 
 [[package]]

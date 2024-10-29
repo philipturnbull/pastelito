@@ -1,4 +1,4 @@
-use pastelito_data::POS;
+use pastelito_model::POS;
 
 use crate::{
     matcher::Matcher,

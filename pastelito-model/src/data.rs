@@ -1,5 +1,3 @@
-//! Pastelito data structures.
-#![feature(ascii_char)]
 use fxhash::FxHashMap;
 use speedy::{Readable, Writable};
 use std::ops::Range;
