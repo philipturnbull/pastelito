@@ -1,10 +1,12 @@
+// Ignore warning in the generated `pastelito.rs` file
+#![allow(static_mut_refs)]
+
 mod pastelito;
 
 use std::sync::OnceLock;
 
 use crate::pastelito::Guest;
 use pastelito::vscode::pastelito::types::{Measurement, Range, Results, Warning};
-//use pastelito::vscode::pastelito::types::Results;
 use pastelito_core::{
     parsers::MarkdownParser,
     rule::{MeasureKey, RuleSet},
