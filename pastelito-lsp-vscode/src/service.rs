@@ -52,9 +52,9 @@ fn rule_results_to_diagnostics(results: Results) -> Vec<Diagnostic> {
         diagnostics.extend(measurements.map(|(range, measurement)| Diagnostic {
             range: to_vscode_range(range),
             severity: Some(DiagnosticSeverity::HINT),
-            code: Some(NumberOrString::String(measurement.key.into())),
+            code: Some(NumberOrString::Number(measurement.key as i32)),
             source: source.clone(),
-            message: measurement.key.into(),
+            message: "".into(),
             ..Default::default()
         }));
     });

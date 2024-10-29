@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+#[allow(unused_imports)]
+use strum::VariantArray as _;
+use strum_macros::VariantArray;
 use tracing::debug_span;
 
 use crate::{
@@ -88,26 +91,20 @@ impl WarningsBuilder {
 }
 
 /// A unique id for a measure.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct MeasureKey(&'static str);
-
-impl From<&'static str> for MeasureKey {
-    fn from(key: &'static str) -> Self {
-        MeasureKey(key)
-    }
-}
-
-impl From<MeasureKey> for String {
-    fn from(val: MeasureKey) -> Self {
-        val.0.to_owned()
-    }
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, VariantArray)]
+#[repr(u8)]
+pub enum MeasureKey {
+    AbstractNouns,
+    AcademicAdWords,
+    Adjectives,
+    BeVerbs,
+    Prepositions,
 }
 
 #[cfg(test)]
 impl quickcheck::Arbitrary for MeasureKey {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        let key = g.choose(&["key0", "key1", "key2", "key3"]).unwrap();
-        MeasureKey(key)
+        *g.choose(MeasureKey::VARIANTS).unwrap()
     }
 }
 

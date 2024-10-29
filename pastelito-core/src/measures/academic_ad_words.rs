@@ -9,7 +9,7 @@ pub struct AcademicAdWords;
 
 impl Measure for AcademicAdWords {
     fn key(&self) -> MeasureKey {
-        "academic-ad-words".into()
+        MeasureKey::AcademicAdWords
     }
 
     fn pattern(&self) -> Box<dyn SingleWordPattern> {

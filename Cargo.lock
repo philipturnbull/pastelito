@@ -815,6 +815,7 @@ dependencies = [
  "smallvec",
  "speedy",
  "strum",
+ "strum_macros",
  "tracing",
  "tracing-subscriber",
 ]

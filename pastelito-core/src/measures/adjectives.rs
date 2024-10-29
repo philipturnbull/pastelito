@@ -9,7 +9,7 @@ pub struct Adjectives;
 
 impl Measure for Adjectives {
     fn key(&self) -> MeasureKey {
-        "adjectives".into()
+        MeasureKey::Adjectives
     }
 
     fn pattern(&self) -> Box<dyn SingleWordPattern> {

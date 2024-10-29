@@ -9,7 +9,7 @@ pub struct Prepositions;
 
 impl Measure for Prepositions {
     fn key(&self) -> MeasureKey {
-        "prepositions".into()
+        MeasureKey::Prepositions
     }
 
     fn pattern(&self) -> Box<dyn SingleWordPattern> {

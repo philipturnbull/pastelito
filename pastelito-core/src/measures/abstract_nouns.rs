@@ -9,7 +9,7 @@ pub struct AbstractNouns;
 
 impl Measure for AbstractNouns {
     fn key(&self) -> MeasureKey {
-        "abstract-nouns".into()
+        MeasureKey::AbstractNouns
     }
 
     fn pattern(&self) -> Box<dyn SingleWordPattern> {

@@ -7,7 +7,7 @@ pub struct BeVerbs;
 
 impl Measure for BeVerbs {
     fn key(&self) -> MeasureKey {
-        "be-verbs".into()
+        MeasureKey::BeVerbs
     }
 
     fn pattern(&self) -> Box<dyn SingleWordPattern> {
