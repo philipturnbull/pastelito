@@ -1,4 +1,4 @@
-use pastelito_model::POS;
+use pastelito_model::Tag;
 
 use crate::{
     matcher::{AndS, OrS, Regex, SingleWordPattern},
@@ -14,7 +14,7 @@ impl Measure for AcademicAdWords {
 
     fn pattern(&self) -> Box<dyn SingleWordPattern> {
         Box::new(AndS(
-            OrS(POS::Adjective, POS::Adverb),
+            OrS(Tag::Adjective, Tag::Adverb),
             Regex::new(r"(?i)\w(able|ac|al|ant|ary|ent|ful|ible|ic|ive|less|ous)$"),
         ))
     }

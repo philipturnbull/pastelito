@@ -1,4 +1,4 @@
-use pastelito_model::POS;
+use pastelito_model::Tag;
 
 use crate::{
     matcher::{Matcher, Opt, Or},
@@ -10,7 +10,7 @@ pub struct PassiveConstruction;
 
 impl MatcherRule for PassiveConstruction {
     fn matcher() -> impl Matcher {
-        (Or("was", "were"), Opt(POS::Adverb), POS::VerbPastParticiple)
+        (Or("was", "were"), Opt(Tag::Adverb), Tag::VerbPastParticiple)
     }
 
     fn on_match(words: &[Word], warnings: &mut WarningsBuilder) {

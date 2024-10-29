@@ -1,4 +1,4 @@
-use pastelito_model::POS;
+use pastelito_model::Tag;
 
 use crate::{
     matcher::{AndS, Matcher, Regex},
@@ -11,7 +11,7 @@ pub struct WeaselWords;
 impl MatcherRule for WeaselWords {
     fn matcher() -> impl Matcher {
         AndS(
-            POS::Adverb,
+            Tag::Adverb,
             Regex::new("(?i)^(absolutely|actually|basically|certainly|completely|definitely|easily|just|literally|probably|quite|rather|really|somehow|suddenly|totally|virtually)$"),
         )
     }

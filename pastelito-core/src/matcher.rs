@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use pastelito_model::POS;
+use pastelito_model::Tag;
 
 use crate::block::{Block, Word};
 
@@ -27,14 +27,14 @@ pub trait MultipleWordPattern {
     ) -> Option<usize>;
 }
 
-/// A pattern that matches words based on their part of speech.
+/// A pattern that matches words based on their tag.
 #[derive(Copy, Clone)]
-pub struct PosFn(pub fn(POS) -> bool);
+pub struct TagFn(pub fn(Tag) -> bool);
 
-impl SingleWordPattern for PosFn {
+impl SingleWordPattern for TagFn {
     fn matches_word(&self, word: &Word) -> bool {
-        match word.pos() {
-            Some(pos) => self.0(pos),
+        match word.tag() {
+            Some(tag) => self.0(tag),
             None => false,
         }
     }
@@ -89,9 +89,9 @@ impl<P: SingleWordPattern> MultipleWordPattern for P {
     }
 }
 
-impl SingleWordPattern for POS {
+impl SingleWordPattern for Tag {
     fn matches_word(&self, word: &Word) -> bool {
-        word.pos() == Some(*self)
+        word.tag() == Some(*self)
     }
 }
 
@@ -414,24 +414,24 @@ pub fn match_words<'input, 'm, M>(
 
 #[cfg(test)]
 mod tests {
-    use pastelito_model::POS;
+    use pastelito_model::Tag;
 
     use crate::{block::test::with_testing_block, matcher::match_words};
 
-    use super::{Any, Ignore, Matcher, Opt, Or, PosFn};
+    use super::{Any, Ignore, Matcher, Opt, Or, TagFn};
 
     fn eq<P: Matcher>(pattern: P, expected: Vec<Vec<&str>>) {
         let words = &[
-            ("The", POS::Determiner),
-            ("cat", POS::NounSingularOrMass),
-            ("sat", POS::VerbPastTense),
-            ("on", POS::PrepositionOrSubordinatingConjunction),
-            ("the", POS::Determiner),
-            ("big", POS::Adjective),
-            (",", POS::Comma),
-            ("green", POS::Adjective),
-            ("mat", POS::NounSingularOrMass),
-            (".", POS::EndOfSentence),
+            ("The", Tag::Determiner),
+            ("cat", Tag::NounSingularOrMass),
+            ("sat", Tag::VerbPastTense),
+            ("on", Tag::PrepositionOrSubordinatingConjunction),
+            ("the", Tag::Determiner),
+            ("big", Tag::Adjective),
+            (",", Tag::Comma),
+            ("green", Tag::Adjective),
+            ("mat", Tag::NounSingularOrMass),
+            (".", Tag::EndOfSentence),
         ];
 
         with_testing_block(words, |block| {
@@ -466,9 +466,9 @@ mod tests {
     }
 
     #[test]
-    fn test_match_pos() {
-        eq(POS::Determiner, vec![vec!["The"], vec!["the"]]);
-        eq(POS::Adjective, vec![vec!["big"], vec!["green"]]);
+    fn test_match_tag() {
+        eq(Tag::Determiner, vec![vec!["The"], vec!["the"]]);
+        eq(Tag::Adjective, vec![vec!["big"], vec!["green"]]);
     }
 
     #[test]
@@ -478,17 +478,17 @@ mod tests {
 
     #[test]
     fn test_multiple() {
-        eq((POS::Determiner, "cat"), vec![vec!["The", "cat"]]);
+        eq((Tag::Determiner, "cat"), vec![vec!["The", "cat"]]);
         eq(
-            (POS::Determiner, Any),
+            (Tag::Determiner, Any),
             vec![vec!["The", "cat"], vec!["the", "big"]],
         );
         eq(
-            ("green", POS::NounSingularOrMass),
+            ("green", Tag::NounSingularOrMass),
             vec![vec!["green", "mat"]],
         );
         eq(
-            (POS::Determiner, "big", POS::Comma, POS::Adjective),
+            (Tag::Determiner, "big", Tag::Comma, Tag::Adjective),
             vec![vec!["the", "big", ",", "green"]],
         );
     }
@@ -496,7 +496,7 @@ mod tests {
     #[test]
     fn test_or() {
         eq(
-            Or(POS::Determiner, "big"),
+            Or(Tag::Determiner, "big"),
             vec![vec!["The"], vec!["the"], vec!["big"]],
         );
     }
@@ -504,7 +504,7 @@ mod tests {
     #[test]
     fn test_opt() {
         eq(
-            (POS::Determiner, Opt("very"), "big"),
+            (Tag::Determiner, Opt("very"), "big"),
             vec![vec!["the", "big"]],
         );
     }
@@ -512,7 +512,7 @@ mod tests {
     #[test]
     fn test_fn() {
         eq(
-            PosFn(|pos| pos == POS::Determiner),
+            TagFn(|tag| tag == Tag::Determiner),
             vec![vec!["The"], vec!["the"]],
         );
     }
@@ -520,7 +520,7 @@ mod tests {
     #[test]
     fn test_ignore() {
         eq(
-            Ignore(POS::Comma, (POS::Adjective, POS::Adjective)),
+            Ignore(Tag::Comma, (Tag::Adjective, Tag::Adjective)),
             vec![vec!["big", "green"]],
         )
     }
@@ -528,22 +528,22 @@ mod tests {
     #[test]
     fn test_backtracking() {
         eq(
-            Or((POS::Determiner, "dog"), (POS::Determiner, "cat")),
+            Or((Tag::Determiner, "dog"), (Tag::Determiner, "cat")),
             vec![vec!["The", "cat"]],
         );
 
         eq(
             Or(
-                (POS::Determiner, "cat", "lay"),
-                (POS::Determiner, "cat", "sat"),
+                (Tag::Determiner, "cat", "lay"),
+                (Tag::Determiner, "cat", "sat"),
             ),
             vec![vec!["The", "cat", "sat"]],
         );
 
         eq(
             Or(
-                (POS::Determiner, "cat", "sat", "by"),
-                (POS::Determiner, "cat", "sat", "on"),
+                (Tag::Determiner, "cat", "sat", "by"),
+                (Tag::Determiner, "cat", "sat", "on"),
             ),
             vec![vec!["The", "cat", "sat", "on"]],
         );

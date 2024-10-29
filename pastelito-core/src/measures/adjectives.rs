@@ -1,4 +1,4 @@
-use pastelito_model::POS;
+use pastelito_model::Tag;
 
 use crate::{
     matcher::{OrS, SingleWordPattern},
@@ -13,6 +13,6 @@ impl Measure for Adjectives {
     }
 
     fn pattern(&self) -> Box<dyn SingleWordPattern> {
-        Box::new(OrS(POS::Adjective, POS::Adverb))
+        Box::new(OrS(Tag::Adjective, Tag::Adverb))
     }
 }

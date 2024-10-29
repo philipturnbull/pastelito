@@ -5,7 +5,7 @@ use std::str::FromStr;
 use strum::{EnumCount, IntoEnumIterator as _};
 use strum_macros::{EnumCount, EnumIter, EnumString, IntoStaticStr, VariantArray};
 
-/// A part of speech.
+/// A part of speech tag.
 #[derive(
     Copy,
     Clone,
@@ -24,7 +24,7 @@ use strum_macros::{EnumCount, EnumIter, EnumString, IntoStaticStr, VariantArray}
     VariantArray,
 )]
 #[repr(u8)]
-pub enum POS {
+pub enum Tag {
     #[strum(serialize = "-START-")]
     Start,
     #[strum(serialize = "-START2-")]
@@ -125,24 +125,24 @@ pub enum POS {
     Backtick,
 }
 
-/// A mapping of `POS` to a score.
+/// A mapping of `Tag` to a score.
 #[derive(Copy, Clone, Readable, Writable)]
 pub struct Scores {
-    scores: [f32; POS::COUNT],
+    scores: [f32; Tag::COUNT],
 }
 
 impl Scores {
-    /// Add `score` to the current score for `pos`.
+    /// Add `score` to the current score for `tag`.
     #[inline]
-    pub fn update(&mut self, pos: POS, score: f32) {
-        self.scores[pos as usize] += score;
+    pub fn update(&mut self, tag: Tag, score: f32) {
+        self.scores[tag as usize] += score;
     }
 
-    /// Get the `POS` with the highest score.
-    pub fn max(&self) -> POS {
+    /// Get the `Tag` with the highest score.
+    pub fn max(&self) -> Tag {
         self.scores
             .iter()
-            .zip(POS::iter())
+            .zip(Tag::iter())
             .max_by(|a, b| a.0.partial_cmp(b.0).unwrap())
             .unwrap()
             .1
@@ -152,7 +152,7 @@ impl Scores {
 impl Default for Scores {
     fn default() -> Self {
         Scores {
-            scores: [0.0; POS::COUNT],
+            scores: [0.0; Tag::COUNT],
         }
     }
 }
@@ -222,8 +222,8 @@ impl ContextWord {
     ///
     /// This can return `None` if the input token contains non-ASCII characters
     /// or is too long.
-    pub fn new_from_word(token: &str, pos: Option<POS>) -> Option<Self> {
-        if pos == Some(POS::CardinalNumber) {
+    pub fn new_from_word(token: &str, tag: Option<Tag>) -> Option<Self> {
+        if tag == Some(Tag::CardinalNumber) {
             if token.len() == 4 && token.chars().all(|c| c.is_ascii_digit()) {
                 return Some(Self::YEAR);
             } else {
@@ -324,11 +324,11 @@ pub enum Feature {
     Bias,
     Suffix(ContextSuffix),
     Pref1(u8),
-    IMinus1Tag(POS),
-    IMinus2Tag(POS),
-    ITagPlusIMinus2Tag(POS, POS),
+    IMinus1Tag(Tag),
+    IMinus2Tag(Tag),
+    ITagPlusIMinus2Tag(Tag, Tag),
     IWord(ContextWord),
-    IMinus1TagPlusIWord(POS, ContextWord),
+    IMinus1TagPlusIWord(Tag, ContextWord),
     IMinus1Word(ContextWord),
     IMinus1Suffix(ContextSuffix),
     IMinus2Word(ContextWord),
@@ -356,21 +356,21 @@ impl From<String> for Feature {
         } else if let Some(value) = s.strip_prefix("i-1 suffix ") {
             Feature::IMinus1Suffix(value.try_into().unwrap())
         } else if let Some(value) = s.strip_prefix("i-1 tag ") {
-            Feature::IMinus1Tag(POS::from_str(value).unwrap())
+            Feature::IMinus1Tag(Tag::from_str(value).unwrap())
         } else if let Some(value) = s.strip_prefix("i-2 tag ") {
-            Feature::IMinus2Tag(POS::from_str(value).unwrap())
+            Feature::IMinus2Tag(Tag::from_str(value).unwrap())
         } else if let Some(value) = s.strip_prefix("i tag+i-2 tag ") {
             let parts = value.split_once(' ').unwrap();
             Feature::ITagPlusIMinus2Tag(
-                POS::from_str(parts.0).unwrap(),
-                POS::from_str(parts.1).unwrap(),
+                Tag::from_str(parts.0).unwrap(),
+                Tag::from_str(parts.1).unwrap(),
             )
         } else if let Some(value) = s.strip_prefix("i word ") {
             Feature::IWord(ContextWord::new_from_model(value))
         } else if let Some(value) = s.strip_prefix("i-1 tag+i word ") {
             let parts = value.split_once(' ').unwrap();
             Feature::IMinus1TagPlusIWord(
-                POS::from_str(parts.0).unwrap(),
+                Tag::from_str(parts.0).unwrap(),
                 ContextWord::new_from_model(parts.1),
             )
         } else if let Some(value) = s.strip_prefix("i-1 word ") {
@@ -421,9 +421,9 @@ impl WeightRange {
 /// A model for the perceptron
 #[derive(Readable, Writable)]
 pub struct Model {
-    static_tags: FxHashMap<String, POS>,
+    static_tags: FxHashMap<String, Tag>,
 
-    weights: Vec<(POS, f32)>,
+    weights: Vec<(Tag, f32)>,
     mapping: FxHashMap<Feature, WeightRange>,
     initial_scores: Scores,
 }
@@ -434,8 +434,8 @@ impl Model {
     /// Users should typically use the model defined in `pastelito-model`
     /// instead of creating their own model.
     pub fn new(
-        static_tags: FxHashMap<String, POS>,
-        weights: Vec<(POS, f32)>,
+        static_tags: FxHashMap<String, Tag>,
+        weights: Vec<(Tag, f32)>,
         mapping: FxHashMap<Feature, WeightRange>,
         initial_scores: Scores,
     ) -> Self {
@@ -453,12 +453,12 @@ impl Model {
     }
 
     /// Get the static tag for a word
-    pub fn get_static_tag(&self, word: &str) -> Option<POS> {
+    pub fn get_static_tag(&self, word: &str) -> Option<Tag> {
         self.static_tags.get(word).copied()
     }
 
     /// Get the weights for a feature
-    pub fn get(&self, feature: &Feature) -> Option<&[(POS, f32)]> {
+    pub fn get(&self, feature: &Feature) -> Option<&[(Tag, f32)]> {
         let range = self.mapping.get(feature)?;
         self.weights.get(range.as_range())
     }
@@ -468,7 +468,7 @@ impl Model {
 mod tests {
     use strum::{EnumCount, IntoEnumIterator as _};
 
-    use crate::{ContextSuffix, ContextWord, Feature, POS};
+    use crate::{ContextSuffix, ContextWord, Feature, Tag};
 
     fn eq(str: &str, expected: Feature) {
         let actual: Feature = str.to_owned().into();
@@ -515,17 +515,17 @@ mod tests {
 
         eq(
             "i-1 tag CC",
-            Feature::IMinus1Tag(POS::CoordinatingConjunction),
+            Feature::IMinus1Tag(Tag::CoordinatingConjunction),
         );
 
         eq(
             "i-2 tag CC",
-            Feature::IMinus2Tag(POS::CoordinatingConjunction),
+            Feature::IMinus2Tag(Tag::CoordinatingConjunction),
         );
 
         eq(
             "i tag+i-2 tag CC CC",
-            Feature::ITagPlusIMinus2Tag(POS::CoordinatingConjunction, POS::CoordinatingConjunction),
+            Feature::ITagPlusIMinus2Tag(Tag::CoordinatingConjunction, Tag::CoordinatingConjunction),
         );
 
         eq(
@@ -732,7 +732,7 @@ mod tests {
         eq(
             "i-1 tag+i word CC a",
             Feature::IMinus1TagPlusIWord(
-                POS::CoordinatingConjunction,
+                Tag::CoordinatingConjunction,
                 ContextWord {
                     chars: [
                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 97,
@@ -804,13 +804,13 @@ mod tests {
     }
 
     #[test]
-    fn pos_indexes() {
-        // `Scores` uses `POS` as an array index. Check that the indexes are in
-        // the range (0..POS::COUNT)
-        let actual = POS::iter()
-            .map(|pos| pos as u8 as usize)
+    fn tag_indexes() {
+        // `Scores` uses `Tag` as an array index. Check that the indexes are in
+        // the range (0..Tag::COUNT)
+        let actual = Tag::iter()
+            .map(|tag| tag as u8 as usize)
             .collect::<Vec<_>>();
-        let expected = (0..POS::COUNT).collect::<Vec<_>>();
+        let expected = (0..Tag::COUNT).collect::<Vec<_>>();
 
         assert_eq!(actual, expected);
     }

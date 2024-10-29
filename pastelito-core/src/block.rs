@@ -1,4 +1,4 @@
-use pastelito_model::POS;
+use pastelito_model::Tag;
 #[allow(unused_imports)]
 use strum::VariantArray as _;
 
@@ -19,7 +19,7 @@ pub enum BlockKind {
 pub struct Word<'input> {
     str: &'input str,
     offset: usize,
-    pos: Option<POS>,
+    tag: Option<Tag>,
 }
 
 impl<'input> Word<'input> {
@@ -28,16 +28,16 @@ impl<'input> Word<'input> {
         Word {
             str,
             offset,
-            pos: None,
+            tag: None,
         }
     }
 
     /// Create a new word with a known part of speech.
-    pub fn new_with_pos(str: &'input str, offset: usize, pos: POS) -> Self {
+    pub fn new_with_tag(str: &'input str, offset: usize, tag: Tag) -> Self {
         Word {
             str,
             offset,
-            pos: Some(pos),
+            tag: Some(tag),
         }
     }
 
@@ -61,23 +61,23 @@ impl<'input> Word<'input> {
     }
 
     /// Check if the part-of-speech tag of this word is unknown.
-    pub fn is_unknown_pos(&self) -> bool {
-        self.pos.is_none()
+    pub fn is_unknown_tag(&self) -> bool {
+        self.tag.is_none()
     }
 
     /// Get the part-of-speech tag of this word.
-    pub fn pos(&self) -> Option<POS> {
-        self.pos
+    pub fn tag(&self) -> Option<Tag> {
+        self.tag
     }
 
     /// Set the part-of-speech tag of this word.
-    pub fn set_pos(&mut self, pos: POS) {
-        self.pos = Some(pos);
+    pub fn set_tag(&mut self, tag: Tag) {
+        self.tag = Some(tag);
     }
 
     /// Clear the part-of-speech tag of this word.
-    pub fn clear_pos(&mut self) {
-        self.pos = None;
+    pub fn clear_tag(&mut self) {
+        self.tag = None;
     }
 }
 
@@ -93,12 +93,12 @@ pub(crate) static ARBITRARY_STR: &str = "foo bar baz quux";
 #[cfg(test)]
 impl quickcheck::Arbitrary for Word<'static> {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        let pos = *g.choose(POS::VARIANTS).unwrap();
+        let tag = *g.choose(Tag::VARIANTS).unwrap();
 
         let offset_lens = [(0, 3), (4, 3), (8, 3), (12, 4)];
         let (offset, len) = *g.choose(&offset_lens).unwrap();
 
-        Word::new_with_pos(&ARBITRARY_STR[offset..(offset + len)], offset, pos)
+        Word::new_with_tag(&ARBITRARY_STR[offset..(offset + len)], offset, tag)
     }
 }
 
@@ -156,20 +156,20 @@ impl<T> IntoIterator for Block<T> {
 pub(crate) mod test {
     use std::ops::Range;
 
-    use pastelito_model::POS;
+    use pastelito_model::Tag;
 
     use super::{Block, BlockKind, Word};
 
-    fn join_words(words: &[(&str, POS)]) -> (String, Vec<(Range<usize>, POS)>) {
+    fn join_words(words: &[(&str, Tag)]) -> (String, Vec<(Range<usize>, Tag)>) {
         let mut input = String::new();
         let mut ranges = Vec::new();
 
-        for (word, pos) in words {
+        for (word, tag) in words {
             let start = input.len();
             input.push_str(word);
             let end = input.len();
 
-            ranges.push((start..end, *pos));
+            ranges.push((start..end, *tag));
             input.push(' ');
         }
 
@@ -178,13 +178,13 @@ pub(crate) mod test {
 
     fn with_words<'input>(
         input: &'input str,
-        ranges: &[(Range<usize>, POS)],
+        ranges: &[(Range<usize>, Tag)],
         cb: impl Fn(Block<Word<'input>>),
     ) {
         let mut words = Vec::new();
-        for (range, pos) in ranges {
+        for (range, tag) in ranges {
             let word = &input[range.clone()];
-            words.push(Word::new_with_pos(word, range.start, *pos));
+            words.push(Word::new_with_tag(word, range.start, *tag));
         }
 
         let block = Block::new(BlockKind::Paragraph, words);
@@ -195,7 +195,7 @@ pub(crate) mod test {
     /// with the result.
     ///
     /// The words are separated by spaces and the correct byte spans are calculated.
-    pub(crate) fn with_testing_block(words: &[(&str, POS)], cb: impl Fn(Block<Word>)) {
+    pub(crate) fn with_testing_block(words: &[(&str, Tag)], cb: impl Fn(Block<Word>)) {
         let (input, ranges) = join_words(words);
         with_words(input.as_str(), &ranges, cb);
     }

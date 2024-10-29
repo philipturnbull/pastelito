@@ -27,7 +27,7 @@ fn benchmark_tag(c: &mut Criterion) {
                 let mut doc = doc.clone();
                 for block in doc.iter_mut() {
                     for word in block.iter_mut() {
-                        word.clear_pos();
+                        word.clear_tag();
                     }
                 }
                 doc

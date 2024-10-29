@@ -6,7 +6,7 @@
 #[allow(unused)]
 mod data;
 
-use data::{Feature, Model, Scores, WeightRange, POS};
+use data::{Feature, Model, Scores, Tag, WeightRange};
 use fxhash::FxHashMap;
 use serde_json::Value;
 use speedy::Writable as _;
@@ -28,20 +28,20 @@ fn output_file_path(filename: &str) -> PathBuf {
     Path::new(&env::var("OUT_DIR").unwrap()).join(filename)
 }
 
-fn dserialize_weight_range(value: serde_json::Value, weights: &mut Vec<(POS, f32)>) -> WeightRange {
+fn dserialize_weight_range(value: serde_json::Value, weights: &mut Vec<(Tag, f32)>) -> WeightRange {
     let start = weights.len();
 
     weights.extend(value.as_object().unwrap().into_iter().map(|(k, v)| {
-        let pos = POS::from_str(k.as_str()).unwrap();
+        let tag = Tag::from_str(k.as_str()).unwrap();
         let weight = v.as_f64().unwrap() as f32;
-        (pos, weight)
+        (tag, weight)
     }));
     let end = weights.len();
 
     WeightRange::new(start, end)
 }
 
-fn deserialize_weights<O>(mut on_weight_mapping: O) -> Vec<(POS, f32)>
+fn deserialize_weights<O>(mut on_weight_mapping: O) -> Vec<(Tag, f32)>
 where
     O: FnMut(String, WeightRange),
 {
@@ -60,15 +60,15 @@ where
     weights
 }
 
-fn read_static_tags() -> FxHashMap<String, POS> {
+fn read_static_tags() -> FxHashMap<String, Tag> {
     let reader = input_file("tags.json");
     let json: Value = serde_json::from_reader(reader).unwrap();
 
-    let mut tags: Vec<(String, POS)> = match json {
+    let mut tags: Vec<(String, Tag)> = match json {
         Value::Object(tags) => tags
             .into_iter()
             .map(|(k, v)| match v {
-                Value::String(v) => (k, POS::from_str(v.as_str()).unwrap()),
+                Value::String(v) => (k, Tag::from_str(v.as_str()).unwrap()),
                 _ => panic!("tag value is not a string, got {:?}", v),
             })
             .collect(),
@@ -93,8 +93,8 @@ fn generate_model() {
     let mut initial_scores = Scores::default();
     let bias_range = weight_mapping.get(&Feature::Bias).unwrap();
     let bias_weights = &weights[bias_range.as_range()];
-    for (pos, weight) in bias_weights {
-        initial_scores.update(*pos, *weight);
+    for (tag, weight) in bias_weights {
+        initial_scores.update(*tag, *weight);
     }
 
     let model = Model::new(static_tags, weights, weight_mapping, initial_scores);

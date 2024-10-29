@@ -1,4 +1,4 @@
-use pastelito_model::POS;
+use pastelito_model::Tag;
 
 use crate::{
     matcher::{Matcher, OneOf, Or},
@@ -12,19 +12,19 @@ impl MatcherRule for RepeatedWords {
     fn matcher() -> impl Matcher {
         Or(
             OneOf([
-                (POS::Determiner, POS::Determiner),
+                (Tag::Determiner, Tag::Determiner),
                 (
-                    POS::VerbNon3rdPersonSingularPresent,
-                    POS::VerbNon3rdPersonSingularPresent,
+                    Tag::VerbNon3rdPersonSingularPresent,
+                    Tag::VerbNon3rdPersonSingularPresent,
                 ),
-                (POS::Modal, POS::Modal),
+                (Tag::Modal, Tag::Modal),
                 (
-                    POS::PrepositionOrSubordinatingConjunction,
-                    POS::PrepositionOrSubordinatingConjunction,
+                    Tag::PrepositionOrSubordinatingConjunction,
+                    Tag::PrepositionOrSubordinatingConjunction,
                 ),
-                (POS::PersonalPronoun, POS::PersonalPronoun),
-                (POS::PossesivePronoun, POS::PossesivePronoun),
-                (POS::To, POS::To),
+                (Tag::PersonalPronoun, Tag::PersonalPronoun),
+                (Tag::PossesivePronoun, Tag::PossesivePronoun),
+                (Tag::To, Tag::To),
             ]),
             OneOf([("be", "be"), ("is", "is"), ("are", "are")]),
         )

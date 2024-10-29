@@ -1,4 +1,4 @@
-use pastelito_model::POS;
+use pastelito_model::Tag;
 
 use crate::{
     matcher::{OrS, SingleWordPattern},
@@ -13,7 +13,7 @@ impl Measure for Prepositions {
     }
 
     fn pattern(&self) -> Box<dyn SingleWordPattern> {
-        Box::new(OrS(POS::PrepositionOrSubordinatingConjunction, POS::To))
+        Box::new(OrS(Tag::PrepositionOrSubordinatingConjunction, Tag::To))
     }
 }
 

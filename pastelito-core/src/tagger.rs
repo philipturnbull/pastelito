@@ -2,7 +2,7 @@ use crate::{
     block::{Block, Word},
     perceptron::Perceptron,
 };
-use pastelito_model::{Model, POS};
+use pastelito_model::{Model, Tag};
 
 /// A part-of-speech tagger.
 pub struct Tagger {
@@ -27,31 +27,30 @@ impl Tagger {
     pub fn tag(&self, block: &mut Block<Word>) {
         // First, add any "static" tags based solely on the token. Some simple
         // words -- such as `on`, `whose`, `after`, etc -- always have the same
-        // POS, so we can tag them immediately without looking at any
+        // tag, so we can tag them immediately without looking at any
         // surrounding context. This is quick and helps the following perceptron
         // step
         self.add_static_tags(block);
 
-        // Next, predict the POS tags for the remaining words using the
-        // perceptron.
+        // Next, predict the tags for the remaining words using the perceptron.
         self.perceptron.predict(block);
     }
 
     fn add_static_tags(&self, block: &mut Block<Word>) {
         for word in block.iter_mut() {
-            if let Some(pos) = self.static_pos(word.as_str()) {
-                word.set_pos(pos);
+            if let Some(tag) = self.static_tag(word.as_str()) {
+                word.set_tag(tag);
             }
         }
     }
 
-    fn static_pos(&self, token: &str) -> Option<POS> {
-        if let Some(pos) = self.model.get_static_tag(token) {
-            return Some(pos);
+    fn static_tag(&self, token: &str) -> Option<Tag> {
+        if let Some(tag) = self.model.get_static_tag(token) {
+            return Some(tag);
         }
 
         if token.len() == 1 && matches!(token.chars().next(), Some('"' | '\'')) {
-            return Some(POS::TwoQuotes);
+            return Some(Tag::TwoQuotes);
         }
 
         if token.chars().any(|c: char| c.is_numeric())
@@ -65,7 +64,7 @@ impl Tagger {
                     || c == '/'
             })
         {
-            return Some(POS::CardinalNumber);
+            return Some(Tag::CardinalNumber);
         }
 
         None
@@ -82,7 +81,7 @@ mod tests {
     use serde_json::Value;
     use std::{fs::File, str::FromStr as _};
 
-    fn eq(words: &[(&str, POS)]) {
+    fn eq(words: &[(&str, Tag)]) {
         with_testing_block(words, |block| {
             let mut unknown_block = Block::new(
                 block.kind(),
@@ -90,7 +89,7 @@ mod tests {
                     .iter()
                     .map(|word| {
                         let mut word = *word;
-                        word.clear_pos();
+                        word.clear_tag();
                         word
                     })
                     .collect::<Vec<_>>(),
@@ -105,28 +104,28 @@ mod tests {
 
     #[test]
     fn test_numbers() {
-        eq(&[("1", POS::CardinalNumber)]);
-        eq(&[("20", POS::CardinalNumber)]);
-        eq(&[("3.3", POS::CardinalNumber)]);
-        eq(&[("-4", POS::CardinalNumber)]);
-        eq(&[("-5.5", POS::CardinalNumber)]);
-        eq(&[("+6", POS::CardinalNumber)]);
-        eq(&[("+7.7", POS::CardinalNumber)]);
-        eq(&[("8,000", POS::CardinalNumber)]);
-        eq(&[("9_000", POS::CardinalNumber)]);
-        eq(&[("10/100", POS::CardinalNumber)]);
+        eq(&[("1", Tag::CardinalNumber)]);
+        eq(&[("20", Tag::CardinalNumber)]);
+        eq(&[("3.3", Tag::CardinalNumber)]);
+        eq(&[("-4", Tag::CardinalNumber)]);
+        eq(&[("-5.5", Tag::CardinalNumber)]);
+        eq(&[("+6", Tag::CardinalNumber)]);
+        eq(&[("+7.7", Tag::CardinalNumber)]);
+        eq(&[("8,000", Tag::CardinalNumber)]);
+        eq(&[("9_000", Tag::CardinalNumber)]);
+        eq(&[("10/100", Tag::CardinalNumber)]);
     }
 
     #[test]
     fn test_static() {
         eq(&[
-            ("The", POS::Determiner),
-            ("cat", POS::NounSingularOrMass),
-            ("sat", POS::VerbPastTense),
-            ("on", POS::PrepositionOrSubordinatingConjunction),
-            ("the", POS::Determiner),
-            ("mat", POS::NounSingularOrMass),
-            (".", POS::EndOfSentence),
+            ("The", Tag::Determiner),
+            ("cat", Tag::NounSingularOrMass),
+            ("sat", Tag::VerbPastTense),
+            ("on", Tag::PrepositionOrSubordinatingConjunction),
+            ("the", Tag::Determiner),
+            ("mat", Tag::NounSingularOrMass),
+            (".", Tag::EndOfSentence),
         ]);
     }
     static BLOG_POST: &str = include_str!("../benches/data/leaving-rust-gamedev.md");
@@ -156,7 +155,7 @@ mod tests {
             .zip(block_string_2.as_slice())
             .enumerate()
         {
-            assert_eq!(word_l.pos(), word_r.pos(), "i: {}", i);
+            assert_eq!(word_l.tag(), word_r.tag(), "i: {}", i);
         }
     }
 
@@ -177,7 +176,7 @@ mod tests {
             .zip(block_r.as_slice())
             .enumerate()
         {
-            assert_eq!(word_l.pos(), word_r.pos(), "i: {}", i);
+            assert_eq!(word_l.tag(), word_r.tag(), "i: {}", i);
         }
     }
 
@@ -187,10 +186,10 @@ mod tests {
         let tagger = Tagger::default();
         tagger.tag(&mut block);
 
-        let actual_tags: Vec<POS> = block
+        let actual_tags: Vec<Tag> = block
             .as_slice()
             .iter()
-            .map(|word| word.pos().unwrap())
+            .map(|word| word.tag().unwrap())
             .collect::<Vec<_>>();
 
         // A simple VCR-like test
@@ -200,12 +199,12 @@ mod tests {
         );
 
         let expected_tags = std::fs::read_to_string(expected_tags_filename);
-        let expected_tags: Option<Vec<POS>> = match expected_tags {
+        let expected_tags: Option<Vec<Tag>> = match expected_tags {
             Ok(s) => match serde_json::from_str(&s) {
                 // If the file exists on disk, read the expected tags
                 Ok(Value::Array(v)) => Some(
                     v.into_iter()
-                        .map(|item| POS::from_str(item.as_str().unwrap()).unwrap())
+                        .map(|item| Tag::from_str(item.as_str().unwrap()).unwrap())
                         .collect(),
                 ),
                 _ => panic!("Invalid JSON format"),
@@ -213,7 +212,7 @@ mod tests {
             Err(_) => None,
         };
 
-        let expected_tags: Vec<POS> = match expected_tags {
+        let expected_tags: Vec<Tag> = match expected_tags {
             Some(expected_tags) => expected_tags,
             None => {
                 // If the file is missing, write the actual tags

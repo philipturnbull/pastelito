@@ -1,4 +1,4 @@
-use pastelito_model::{ContextWord, Feature, Model, POS};
+use pastelito_model::{ContextWord, Feature, Model, Tag};
 use strum::EnumCount as _;
 
 use crate::block::{Block, Word};
@@ -20,7 +20,7 @@ impl Context {
             .chain(
                 block
                     .iter()
-                    .map(|word| ContextWord::new_from_word(word.as_str(), word.pos())),
+                    .map(|word| ContextWord::new_from_word(word.as_str(), word.tag())),
             )
             .chain([Some(ContextWord::END), Some(ContextWord::END2)])
             .collect::<Vec<_>>();
@@ -54,7 +54,7 @@ impl Context {
 /// The weights for a single word.
 struct WordWeights {
     model: &'static Model,
-    weights: Vec<&'static [(POS, f32)]>,
+    weights: Vec<&'static [(Tag, f32)]>,
 }
 
 impl WordWeights {
@@ -79,7 +79,7 @@ impl WordWeights {
     }
 
     /// Get the current weights of this word.
-    fn as_slice(&self) -> &[&'static [(POS, f32)]] {
+    fn as_slice(&self) -> &[&'static [(Tag, f32)]] {
         &self.weights
     }
 }
@@ -95,7 +95,7 @@ impl Perceptron {
         Self { model }
     }
 
-    /// Predict the POS tags for all words in the given block.
+    /// Predict the tags for all words in the given block.
     ///
     /// This should be run after the "static tags" phase. The words are modified
     /// in place.
@@ -103,35 +103,35 @@ impl Perceptron {
         let context = Context::new(block);
         let mut weights = WordWeights::new(self.model);
 
-        let mut p1 = POS::Start;
-        let mut p2 = POS::Start2;
+        let mut t1 = Tag::Start;
+        let mut t2 = Tag::Start2;
 
         for (i, word) in block.iter_mut().enumerate() {
-            let next_p1 = match word.pos() {
+            let next_t1 = match word.tag() {
                 None => {
-                    // Only predict if the POS tag is currently unknown.
-                    let pos = self.predict_one(&mut weights, &context, i, word.as_str(), p1, p2);
-                    word.set_pos(pos);
-                    pos
+                    // Only predict if the tag is currently unknown.
+                    let tag = self.predict_one(&mut weights, &context, i, word.as_str(), t1, t2);
+                    word.set_tag(tag);
+                    tag
                 }
-                Some(pos) => pos,
+                Some(tag) => tag,
             };
 
-            p2 = p1;
-            p1 = next_p1;
+            t2 = t1;
+            t1 = next_t1;
         }
     }
 
-    /// Predict the POS tag for a single word.
+    /// Predict the tag for a single word.
     fn predict_one(
         &self,
         weights: &mut WordWeights,
         context: &Context,
         word_index: usize,
         token: &str,
-        p1: POS,
-        p2: POS,
-    ) -> POS {
+        t1: Tag,
+        t2: Tag,
+    ) -> Tag {
         weights.clear();
 
         if let Ok(suffix) = token.try_into() {
@@ -140,9 +140,9 @@ impl Perceptron {
         if let Some(c) = token.chars().next().unwrap().as_ascii() {
             weights.push(&Feature::Pref1(c.to_u8()));
         }
-        weights.push(&Feature::IMinus1Tag(p1));
-        weights.push(&Feature::IMinus2Tag(p2));
-        weights.push(&Feature::ITagPlusIMinus2Tag(p1, p2));
+        weights.push(&Feature::IMinus1Tag(t1));
+        weights.push(&Feature::IMinus2Tag(t2));
+        weights.push(&Feature::ITagPlusIMinus2Tag(t1, t2));
 
         let (minus2, minus1, current, plus1, plus2) = context.window(word_index + 2);
 
@@ -157,7 +157,7 @@ impl Perceptron {
 
         if let Some(word) = current {
             weights.push(&Feature::IWord(word));
-            weights.push(&Feature::IMinus1TagPlusIWord(p1, word));
+            weights.push(&Feature::IMinus1TagPlusIWord(t1, word));
         }
 
         if let Some(word) = plus1 {
@@ -172,8 +172,8 @@ impl Perceptron {
         let mut scores = self.model.initial_scores();
 
         for w in weights.as_slice() {
-            for (pos, weight) in *w {
-                scores.update(*pos, *weight);
+            for (tag, weight) in *w {
+                scores.update(*tag, *weight);
             }
         }
 

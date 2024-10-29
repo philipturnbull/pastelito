@@ -1,4 +1,4 @@
-use pastelito_model::POS;
+use pastelito_model::Tag;
 
 use crate::{
     matcher::{Matcher, OneOfS, Regex},
@@ -12,14 +12,14 @@ impl MatcherRule for AcademicWe {
     fn matcher() -> impl Matcher {
         (
             Regex::new(r"(?i)^we$"),
-            POS::Modal,
+            Tag::Modal,
             OneOfS([
-                POS::VerbBaseForm,
-                POS::VerbPastTense,
-                POS::VerbGerundOrPresentParticiple,
-                POS::VerbPastParticiple,
-                POS::VerbNon3rdPersonSingularPresent,
-                POS::Verb3rdPersonSingularPresent,
+                Tag::VerbBaseForm,
+                Tag::VerbPastTense,
+                Tag::VerbGerundOrPresentParticiple,
+                Tag::VerbPastParticiple,
+                Tag::VerbNon3rdPersonSingularPresent,
+                Tag::Verb3rdPersonSingularPresent,
             ]),
         )
     }

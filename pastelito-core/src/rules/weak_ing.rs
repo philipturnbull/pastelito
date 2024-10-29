@@ -1,4 +1,4 @@
-use pastelito_model::POS;
+use pastelito_model::Tag;
 
 use crate::{
     matcher::Matcher,
@@ -10,7 +10,7 @@ pub struct WeakIng;
 
 impl MatcherRule for WeakIng {
     fn matcher() -> impl Matcher {
-        (POS::Modal, "be", POS::VerbGerundOrPresentParticiple)
+        (Tag::Modal, "be", Tag::VerbGerundOrPresentParticiple)
     }
 
     fn on_match(words: &[Word], warnings: &mut WarningsBuilder) {

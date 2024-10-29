@@ -1,4 +1,4 @@
-use pastelito_model::POS;
+use pastelito_model::Tag;
 
 use crate::{
     matcher::{AndS, OneOfS, Regex, SingleWordPattern},
@@ -15,10 +15,10 @@ impl Measure for AbstractNouns {
     fn pattern(&self) -> Box<dyn SingleWordPattern> {
         Box::new(AndS(
             OneOfS([
-                POS::NounPlural,
-                POS::NounSingularOrMass,
-                POS::ProperNounSingular,
-                POS::ProperNounPlural,
+                Tag::NounPlural,
+                Tag::NounSingularOrMass,
+                Tag::ProperNounSingular,
+                Tag::ProperNounPlural,
             ]),
             Regex::new(r"(?i)\w(ance|ence|ences|ion|ions|ism|isms|ment|ty|ties)$"),
         ))
