@@ -112,7 +112,6 @@ class Matchers implements vscode.Disposable {
 }
 
 export class Display implements vscode.Disposable {
-    protected outputChannel: vscode.OutputChannel;
     protected disposables: vscode.Disposable[] = [];
     private matchers: Matchers;
 
@@ -120,9 +119,7 @@ export class Display implements vscode.Disposable {
     // the theme without triggering a request to the LSP
     private measurementCache: Map<string, Measurement[]> = new Map();
 
-    constructor(outputChannel: vscode.OutputChannel) {
-        this.outputChannel = outputChannel;
-
+    constructor() {
         this.disposables.push(
             vscode.workspace.onDidChangeConfiguration((event) => {
                 if (event.affectsConfiguration('pastelito.theme')) {

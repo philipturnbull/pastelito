@@ -3,7 +3,6 @@ resolver = "2"
 members = [
     "fuzz",
     "pastelito-core",
-    "pastelito-lsp-vscode",
     "pastelito-model",
     "pastelito-vscode"
 ]

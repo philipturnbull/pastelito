@@ -30,16 +30,16 @@ export class WASMDisplay extends Display {
 
     // Constructors can't be async, so we need to init the WASM bundle, then
     // create the display.
-    public static async create(outputChannel: vscode.OutputChannel, extensionUri: vscode.Uri): Promise<WASMDisplay> {
+    public static async create(extensionUri: vscode.Uri): Promise<WASMDisplay> {
         if (!API) {
             API = await initPastelitoAPI(extensionUri);
         }
 
-        return new WASMDisplay(outputChannel, API);
+        return new WASMDisplay(API);
     }
 
-    private constructor(outputChannel: vscode.OutputChannel, private api: pastelito.Exports) {
-        super(outputChannel);
+    private constructor(private api: pastelito.Exports) {
+        super();
 
         this.diagnostics = vscode.languages.createDiagnosticCollection('pastelito');
         this.disposables.push(this.diagnostics);
