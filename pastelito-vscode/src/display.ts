@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { Theme } from './theme';
 import { hoverMessageFor, Measurement, MEASUREMENT_KEYS, MeasurementKey } from './core';
-import { Types } from './pastelito';
 
 interface RenderOptions {
     renderOptions(): vscode.DecorationRenderOptions;
@@ -112,19 +111,16 @@ class Matchers implements vscode.Disposable {
     }
 }
 
-export class MeasurementsDisplay implements vscode.Disposable {
-    diagnostics: vscode.DiagnosticCollection;
-    outputChannel: vscode.OutputChannel;
-    disposables: vscode.Disposable[] = [];
-    matchers: Matchers;
+export class Display implements vscode.Disposable {
+    protected outputChannel: vscode.OutputChannel;
+    protected disposables: vscode.Disposable[] = [];
+    private matchers: Matchers;
 
     // We store a cache of measurements for each document. This lets us change
     // the theme without triggering a request to the LSP
-    measurementCache: Map<string, Measurement[]> = new Map();
+    private measurementCache: Map<string, Measurement[]> = new Map();
 
     constructor(outputChannel: vscode.OutputChannel) {
-        this.diagnostics = vscode.languages.createDiagnosticCollection('pastelito');
-
         this.outputChannel = outputChannel;
 
         this.disposables.push(
@@ -135,7 +131,9 @@ export class MeasurementsDisplay implements vscode.Disposable {
                     // Create new matchers with the new theme.
                     this.matchers = new Matchers(Theme.current());
                     // Apply the new matchers to all visible editors.
-                    this.applyDiagnosticsToEditors(vscode.window.visibleTextEditors);
+                    for (const editor of vscode.window.visibleTextEditors) {
+                        this.createDecorations(editor);
+                    }
 
                     // Dispose of the old decorations after applying the new ones. This
                     // prevents flickering.
@@ -146,13 +144,15 @@ export class MeasurementsDisplay implements vscode.Disposable {
 
         this.disposables.push(
             vscode.window.onDidChangeVisibleTextEditors((editors) => {
-                this.applyDiagnosticsToEditors(editors);
+                for (const editor of editors) {
+                    this.createDecorations(editor);
+                }
             })
         );
 
         this.disposables.push(
             vscode.workspace.onDidCloseTextDocument((document) => {
-                this.measurementCache.delete(document.uri.toString());
+                this.clearCache(document.uri);
             })
         );
 
@@ -164,55 +164,23 @@ export class MeasurementsDisplay implements vscode.Disposable {
         this.disposables.forEach(disposable => disposable.dispose());
     }
 
-    // Map an URI to a visible editor, and call a callback with the editor.
-    withVisibleEditor(uri: vscode.Uri, callback: (editor: vscode.TextEditor) => void) {
-        const editor = vscode.window.visibleTextEditors.find(editor =>
-            editor.document.uri.toString() === uri.toString()
-        );
-
-        if (editor) {
-            callback(editor);
-        }
-    }
-
-    // Main entry-point, called when we receive diagnostics from the server.
-    handleDiagnostics(uri: vscode.Uri, diagnostics: vscode.Diagnostic[]) {
-        this.measurementCache.set(uri.toString(), diagnostics.map(Measurement.fromDiagnostic));
-
-        this.applyDiagnosticsToUri(uri);
-    }
-
-    handleResults(uri: vscode.Uri, results: Types.Results) {
-        this.measurementCache.set(uri.toString(), results.measurements.map(Measurement.fromWASM));
-
-        this.applyDiagnosticsToUri(uri);
-
-        let warnings = results.warnings.map((warning) =>
-            new vscode.Diagnostic(
-                new vscode.Range(
-                    warning.range.startLine,
-                    warning.range.startChar,
-                    warning.range.endLine,
-                    warning.range.endChar
-                ),
-                warning.message,
-                vscode.DiagnosticSeverity.Warning
-            )
-        );
-        this.diagnostics.set(uri, warnings);
-    }
-
     clearCache(uri: vscode.Uri) {
         this.measurementCache.delete(uri.toString());
     }
 
-    applyDiagnosticsToUri(uri: vscode.Uri) {
-        this.withVisibleEditor(uri, (editor) => {
-            this.applyDiagnosticsToEditor(editor);
-        });
+    protected setMeasurements(uri: vscode.Uri, measurements: Measurement[]) {
+        this.measurementCache.set(uri.toString(), measurements);
+
+        const editor = vscode.window.visibleTextEditors.find(
+            (editor) => editor.document.uri.toString() === uri.toString()
+        );
+
+        if (editor) {
+            this.createDecorations(editor);
+        }
     }
 
-    applyDiagnosticsToEditor(editor: vscode.TextEditor) {
+    private createDecorations(editor: vscode.TextEditor) {
         const measurements = this.measurementCache.get(editor.document.uri.toString());
         if (measurements === undefined) {
             return;
@@ -220,14 +188,6 @@ export class MeasurementsDisplay implements vscode.Disposable {
 
         for (const [decorationType, decorationOptions] of this.matchers.partition(measurements)) {
             editor.setDecorations(decorationType, decorationOptions);
-        }
-    }
-
-    applyDiagnosticsToEditors(editors: readonly vscode.TextEditor[]) {
-        for (const editor of editors) {
-            if (editor.document.languageId === 'markdown') {
-                this.applyDiagnosticsToUri(editor.document.uri);
-            }
         }
     }
 }
