@@ -5,20 +5,18 @@ edition = "2021"
 
 [dependencies]
 pulldown-cmark = "0.12.1"
-serde_json = "1.0.128"
 smallvec = "1.13.2"
-speedy = "0.8.7"
 tracing = "0.1.40"
 pastelito-model = { path = "../pastelito-model" }
 regex = "1.11.0"
 strum = "0.26.3"
-lazy-regex = "3.3.0"
 strum_macros = "0.26.4"
 
 [dev-dependencies]
 criterion = "0.5.1"
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"
+serde_json = "1.0.128"
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 
