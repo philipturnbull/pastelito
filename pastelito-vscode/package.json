@@ -35,6 +35,12 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "pastelito.toggle",
+        "title": "Pastelito: Toggle highlighting"
+      }
+    ],
     "configuration": {
       "properties": {
         "pastelito.builtin": {
@@ -80,6 +86,11 @@
           "markdownDescription": "Color for prepositions",
           "default": "",
           "type": "string"
+        },
+        "pastelito.enabledByDefault": {
+          "markdownDescription": "Enable pastelito highlighting by default",
+          "default": true,
+          "type": "boolean"
         }
       }
     }

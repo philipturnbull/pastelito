@@ -106,6 +106,10 @@ class Matchers implements vscode.Disposable {
         return parts;
     }
 
+    decorationTypes() {
+        return this.matchers.map(matcher => matcher.decorationType);
+    }
+
     dispose() {
         this.matchers.forEach(matcher => matcher.dispose());
     }
@@ -115,11 +119,15 @@ export class Display implements vscode.Disposable {
     protected disposables: vscode.Disposable[] = [];
     private matchers: Matchers;
 
+    private enabled: boolean;
+
     // We store a cache of measurements for each document. This lets us change
     // the theme without triggering a request to the LSP
     private measurementCache: Map<string, Measurement[]> = new Map();
 
     constructor() {
+        this.enabled = vscode.workspace.getConfiguration('pastelito').get<boolean>('enabledByDefault') === true;
+
         this.disposables.push(
             vscode.workspace.onDidChangeConfiguration((event) => {
                 if (Theme.affectedBy(event)) {
@@ -178,13 +186,27 @@ export class Display implements vscode.Disposable {
     }
 
     private createDecorations(editor: vscode.TextEditor) {
-        const measurements = this.measurementCache.get(editor.document.uri.toString());
-        if (measurements === undefined) {
-            return;
-        }
+        if (this.enabled) {
+            const measurements = this.measurementCache.get(editor.document.uri.toString());
+            if (measurements === undefined) {
+                return;
+            }
 
-        for (const [decorationType, decorationOptions] of this.matchers.partition(measurements)) {
-            editor.setDecorations(decorationType, decorationOptions);
+            for (const [decorationType, decorationOptions] of this.matchers.partition(measurements)) {
+                editor.setDecorations(decorationType, decorationOptions);
+            }
+        } else {
+            for (const decorationType of this.matchers.decorationTypes()) {
+                editor.setDecorations(decorationType, []);
+            }
         }
+    }
+
+    toggleHighlighting() {
+        this.enabled = !this.enabled;
+
+        vscode.window.visibleTextEditors.forEach((editor) => {
+            this.createDecorations(editor);
+        });
     }
 }
