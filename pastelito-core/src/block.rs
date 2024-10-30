@@ -194,7 +194,7 @@ pub(crate) mod test {
     fn with_words<'input>(
         input: &'input str,
         ranges: &[(Range<usize>, Tag)],
-        cb: impl Fn(Block<Word<'input>>),
+        cb: impl Fn(&'input str, Block<Word<'input>>),
     ) {
         let mut words = Vec::new();
         for (range, tag) in ranges {
@@ -203,14 +203,14 @@ pub(crate) mod test {
         }
 
         let block = Block::new(BlockKind::Paragraph, words);
-        cb(block);
+        cb(input, block);
     }
 
     /// A helper function to create a `Block` from a list of words and call `cb`
     /// with the result.
     ///
     /// The words are separated by spaces and the correct byte spans are calculated.
-    pub(crate) fn with_testing_block(words: &[TestWord], cb: impl Fn(Block<Word>)) {
+    pub(crate) fn with_testing_block(words: &[TestWord], cb: impl Fn(&str, Block<Word>)) {
         let (input, ranges) = join_words(words);
         with_words(input.as_str(), &ranges, cb);
     }

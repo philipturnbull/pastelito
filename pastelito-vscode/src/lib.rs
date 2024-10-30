@@ -14,9 +14,9 @@ static DEFAULT_RULESET: OnceLock<RuleSet> = OnceLock::new();
 fn to_range(range: LineCharRange) -> Range {
     Range {
         start_line: range.start_line,
-        start_char: range.start_char,
+        start_char_utf16: range.start_char_utf16,
         end_line: range.end_line,
-        end_char: range.end_char,
+        end_char_utf16: range.end_char_utf16,
     }
 }
 

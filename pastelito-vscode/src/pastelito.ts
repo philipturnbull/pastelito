@@ -9,9 +9,9 @@ import type { u32, i32, ptr } from '@vscode/wasm-component-model';
 export namespace Types {
 	export type Range = {
 		startLine: u32;
-		startChar: u32;
+		startCharUtf16: u32;
 		endLine: u32;
-		endChar: u32;
+		endCharUtf16: u32;
 	};
 
 	export type Warning = {
@@ -55,9 +55,9 @@ export namespace pastelito {
 export namespace Types.$ {
 	export const Range = new $wcm.RecordType<Types.Range>([
 		['startLine', $wcm.u32],
-		['startChar', $wcm.u32],
+		['startCharUtf16', $wcm.u32],
 		['endLine', $wcm.u32],
-		['endChar', $wcm.u32],
+		['endCharUtf16', $wcm.u32],
 	]);
 	export const Warning = new $wcm.RecordType<Types.Warning>([
 		['message', $wcm.wstring],

@@ -53,9 +53,9 @@ export class Measurement {
     static fromWASM(measurement: Types.Measurement): Measurement {
         const range = new vscode.Range(
             measurement.range.startLine,
-            measurement.range.startChar,
+            measurement.range.startCharUtf16,
             measurement.range.endLine,
-            measurement.range.endChar
+            measurement.range.endCharUtf16
         );
 
         return new Measurement(measurement.key as MeasurementKey, range);

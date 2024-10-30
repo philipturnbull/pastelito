@@ -488,7 +488,7 @@ mod tests {
             TestWord::Word(".", Tag::EndOfSentence),
         ];
 
-        with_testing_block(words, |block| {
+        with_testing_block(words, |_, block| {
             let mut matches: Vec<Vec<&str>> = Vec::new();
 
             match_words(&block, &pattern, |words| {

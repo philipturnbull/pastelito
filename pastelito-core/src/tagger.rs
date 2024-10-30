@@ -85,7 +85,7 @@ mod tests {
     use std::{fs::File, str::FromStr as _};
 
     fn eq(words: &[TestWord]) {
-        with_testing_block(words, |block| {
+        with_testing_block(words, |_, block| {
             let mut unknown_block = Block::new(
                 block.kind(),
                 block

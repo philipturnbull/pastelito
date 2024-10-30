@@ -21,6 +21,30 @@ pub(crate) trait HasSpan {
     fn span(&self) -> ByteSpan;
 }
 
+impl HasSpan for ByteSpan {
+    fn span(&self) -> ByteSpan {
+        *self
+    }
+}
+
+impl HasSpan for &ByteSpan {
+    fn span(&self) -> ByteSpan {
+        **self
+    }
+}
+
+impl HasSpan for Word<'_> {
+    fn span(&self) -> ByteSpan {
+        self.as_span()
+    }
+}
+
+impl HasSpan for &Word<'_> {
+    fn span(&self) -> ByteSpan {
+        self.as_span()
+    }
+}
+
 /// A single finding from a rule which indicates a possible error in the
 /// document.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

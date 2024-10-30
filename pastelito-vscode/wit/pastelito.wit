@@ -3,9 +3,9 @@ package vscode:pastelito;
 interface types {
     record range {
         start-line: u32,
-        start-char: u32,
+        start-char-utf16: u32,
         end-line: u32,
-        end-char: u32,
+        end-char-utf16: u32,
     }
 
     record warning {

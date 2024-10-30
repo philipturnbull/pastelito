@@ -28,16 +28,16 @@ export class WASMDisplay extends Display {
 
     // Constructors can't be async, so we need to init the WASM bundle, then
     // create the display.
-    public static async create(extensionUri: vscode.Uri): Promise<WASMDisplay> {
+    public static async create(extensionUri: vscode.Uri, outputChannel: vscode.OutputChannel): Promise<WASMDisplay> {
         if (!API) {
             API = await initPastelitoAPI(extensionUri);
         }
 
-        return new WASMDisplay(API);
+        return new WASMDisplay(API, outputChannel);
     }
 
-    private constructor(private api: pastelito.Exports) {
-        super();
+    private constructor(private api: pastelito.Exports, outputChannel: vscode.OutputChannel) {
+        super(outputChannel);
 
         this.diagnostics = vscode.languages.createDiagnosticCollection('pastelito');
         this.disposables.push(this.diagnostics);
@@ -60,6 +60,14 @@ export class WASMDisplay extends Display {
     }
 
     private update(document: vscode.TextDocument) {
+        try {
+            this.update_(document);
+        } catch (e) {
+            this.log(`Update failed for ${document.uri.toString()}:\n${e}`);
+        }
+    }
+
+    private update_(document: vscode.TextDocument) {
         if (document.languageId !== 'markdown') {
             return;
         }
@@ -73,9 +81,9 @@ export class WASMDisplay extends Display {
             new vscode.Diagnostic(
                 new vscode.Range(
                     warning.range.startLine,
-                    warning.range.startChar,
+                    warning.range.startCharUtf16,
                     warning.range.endLine,
-                    warning.range.endChar
+                    warning.range.endCharUtf16
                 ),
                 warning.message,
                 vscode.DiagnosticSeverity.Warning

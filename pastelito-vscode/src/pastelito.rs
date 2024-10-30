@@ -32,11 +32,11 @@ for (i, e) in vec7.into_iter().enumerate() {
     ::core::mem::forget(vec5);
     *base.add(4).cast::<usize>() = len5;
     *base.add(0).cast::<*mut u8>() = ptr5.cast_mut();
-    let vscode::pastelito::types::Range{ start_line:start_line6, start_char:start_char6, end_line:end_line6, end_char:end_char6, } = range4;
+    let vscode::pastelito::types::Range{ start_line:start_line6, start_char_utf16:start_char_utf166, end_line:end_line6, end_char_utf16:end_char_utf166, } = range4;
     *base.add(8).cast::<i32>() = _rt::as_i32(start_line6);
-    *base.add(12).cast::<i32>() = _rt::as_i32(start_char6);
+    *base.add(12).cast::<i32>() = _rt::as_i32(start_char_utf166);
     *base.add(16).cast::<i32>() = _rt::as_i32(end_line6);
-    *base.add(20).cast::<i32>() = _rt::as_i32(end_char6);
+    *base.add(20).cast::<i32>() = _rt::as_i32(end_char_utf166);
   }
 }
 *ptr2.add(4).cast::<usize>() = len7;
@@ -110,13 +110,13 @@ pub mod vscode {
       #[derive(Clone, Copy)]
       pub struct Range {
         pub start_line: u32,
-        pub start_char: u32,
+        pub start_char_utf16: u32,
         pub end_line: u32,
-        pub end_char: u32,
+        pub end_char_utf16: u32,
       }
       impl ::core::fmt::Debug for Range {
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-          f.debug_struct("Range").field("start-line", &self.start_line).field("start-char", &self.start_char).field("end-line", &self.end_line).field("end-char", &self.end_char).finish()
+          f.debug_struct("Range").field("start-line", &self.start_line).field("start-char-utf16", &self.start_char_utf16).field("end-line", &self.end_line).field("end-char-utf16", &self.end_char_utf16).finish()
         }
       }
       #[derive(Clone)]
@@ -282,16 +282,17 @@ pub(crate) use __export_pastelito_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.34.0:vscode:pastelito:pastelito:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 424] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa8\x02\x01A\x02\x01\
-A\x06\x01B\x0a\x01r\x04\x0astart-liney\x0astart-chary\x08end-liney\x08end-chary\x04\
-\0\x05range\x03\0\0\x01r\x02\x07messages\x05range\x01\x04\0\x07warning\x03\0\x02\
-\x01r\x02\x03keyy\x05range\x01\x04\0\x0bmeasurement\x03\0\x04\x01p\x03\x01p\x05\x01\
-r\x02\x08warnings\x06\x0cmeasurements\x07\x04\0\x07results\x03\0\x08\x03\0\x16vs\
-code:pastelito/types\x05\0\x02\x03\0\0\x07results\x03\0\x07results\x03\0\x01\x01\
-@\x01\x05inputs\0\x02\x04\0\x13apply-default-rules\x01\x03\x04\0\x1avscode:paste\
-lito/pastelito\x04\0\x0b\x0f\x01\0\x09pastelito\x03\0\0\0G\x09producers\x01\x0cp\
-rocessed-by\x02\x0dwit-component\x070.219.1\x10wit-bindgen-rust\x060.34.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 436] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb4\x02\x01A\x02\x01\
+A\x06\x01B\x0a\x01r\x04\x0astart-liney\x10start-char-utf16y\x08end-liney\x0eend-\
+char-utf16y\x04\0\x05range\x03\0\0\x01r\x02\x07messages\x05range\x01\x04\0\x07wa\
+rning\x03\0\x02\x01r\x02\x03keyy\x05range\x01\x04\0\x0bmeasurement\x03\0\x04\x01\
+p\x03\x01p\x05\x01r\x02\x08warnings\x06\x0cmeasurements\x07\x04\0\x07results\x03\
+\0\x08\x03\0\x16vscode:pastelito/types\x05\0\x02\x03\0\0\x07results\x03\0\x07res\
+ults\x03\0\x01\x01@\x01\x05inputs\0\x02\x04\0\x13apply-default-rules\x01\x03\x04\
+\0\x1avscode:pastelito/pastelito\x04\0\x0b\x0f\x01\0\x09pastelito\x03\0\0\0G\x09\
+producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.219.1\x10wit-bindgen-rus\
+t\x060.34.0";
 
 #[inline(never)]
 #[doc(hidden)]

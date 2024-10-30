@@ -167,4 +167,11 @@ mod tests {
         let expected = vec!["1", ",", "-2", ",", "3.14", ",", "-4.2", ",", "5", "%"];
         eq(input, expected);
     }
+
+    #[test]
+    fn test_multibyte() {
+        let input = "🦕 one two three";
+        let expected = vec!["🦕", "one", "two", "three"];
+        eq(input, expected);
+    }
 }
