@@ -13,7 +13,7 @@
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
 			"outFiles": [
-				"${workspaceFolder}/pastelito-vscode/out/**/*.js"
+				"${workspaceFolder}/pastelito-vscode/dist/**/*.js"
 			],
 			"preLaunchTask": "${defaultBuildTask}"
 		}

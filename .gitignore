@@ -2,4 +2,5 @@ target/
 pastelito-vscode/target-wasm/
 
 pastelito-vscode/node_modules/
+pastelito-vscode/dist/
 pastelito-vscode/out/
