@@ -96,10 +96,11 @@
     }
   },
   "scripts": {
+    "wit-bindgen": "wit-bindgen rust wit/pastelito.wit --out-dir ./src",
+    "wit2ts": "wit2ts --outDir ./src ./wit",
+    "build-wit": "npm run wit-bindgen && npm run wit2ts",
     "build-wasm": "cargo build --release --target wasm32-unknown-unknown --target-dir ./target-wasm && cp ./target-wasm/wasm32-unknown-unknown/release/pastelito_vscode.wasm ./dist",
     "build": "npm run compile && npm run build-wasm",
-    "wit-bindgen": "wit-bindgen rust wit/pastelito.wit --out-dir ./src",
-    "generate:model": "wit2ts --outDir ./src ./wit",
     "compile": "npm run check-types && node esbuild.js",
     "check-types": "tsc --noEmit",
     "watch": "npm-run-all -p watch:*",
