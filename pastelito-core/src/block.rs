@@ -160,17 +160,32 @@ pub(crate) mod test {
 
     use super::{Block, BlockKind, Word};
 
-    fn join_words(words: &[(&str, Tag)]) -> (String, Vec<(Range<usize>, Tag)>) {
+    pub(crate) enum TestWord {
+        Word(&'static str, Tag),
+        Space,
+        Newline,
+    }
+
+    fn join_words(words: &[TestWord]) -> (String, Vec<(Range<usize>, Tag)>) {
         let mut input = String::new();
         let mut ranges = Vec::new();
 
-        for (word, tag) in words {
-            let start = input.len();
-            input.push_str(word);
-            let end = input.len();
+        for word in words {
+            match word {
+                TestWord::Newline => {
+                    input.push('\n');
+                }
+                TestWord::Space => {
+                    input.push(' ');
+                }
+                TestWord::Word(word, tag) => {
+                    let start = input.len();
+                    input.push_str(word);
+                    let end = input.len();
 
-            ranges.push((start..end, *tag));
-            input.push(' ');
+                    ranges.push((start..end, *tag));
+                }
+            }
         }
 
         (input, ranges)
@@ -195,7 +210,7 @@ pub(crate) mod test {
     /// with the result.
     ///
     /// The words are separated by spaces and the correct byte spans are calculated.
-    pub(crate) fn with_testing_block(words: &[(&str, Tag)], cb: impl Fn(Block<Word>)) {
+    pub(crate) fn with_testing_block(words: &[TestWord], cb: impl Fn(Block<Word>)) {
         let (input, ranges) = join_words(words);
         with_words(input.as_str(), &ranges, cb);
     }

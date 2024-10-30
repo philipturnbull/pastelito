@@ -75,13 +75,16 @@ impl Tagger {
 mod tests {
     use super::*;
     use crate::{
-        block::{test::with_testing_block, BlockKind},
+        block::{
+            test::{with_testing_block, TestWord},
+            BlockKind,
+        },
         span::{ByteSpan, FullByteSpan},
     };
     use serde_json::Value;
     use std::{fs::File, str::FromStr as _};
 
-    fn eq(words: &[(&str, Tag)]) {
+    fn eq(words: &[TestWord]) {
         with_testing_block(words, |block| {
             let mut unknown_block = Block::new(
                 block.kind(),
@@ -104,28 +107,33 @@ mod tests {
 
     #[test]
     fn test_numbers() {
-        eq(&[("1", Tag::CardinalNumber)]);
-        eq(&[("20", Tag::CardinalNumber)]);
-        eq(&[("3.3", Tag::CardinalNumber)]);
-        eq(&[("-4", Tag::CardinalNumber)]);
-        eq(&[("-5.5", Tag::CardinalNumber)]);
-        eq(&[("+6", Tag::CardinalNumber)]);
-        eq(&[("+7.7", Tag::CardinalNumber)]);
-        eq(&[("8,000", Tag::CardinalNumber)]);
-        eq(&[("9_000", Tag::CardinalNumber)]);
-        eq(&[("10/100", Tag::CardinalNumber)]);
+        eq(&[TestWord::Word("1", Tag::CardinalNumber)]);
+        eq(&[TestWord::Word("20", Tag::CardinalNumber)]);
+        eq(&[TestWord::Word("3.3", Tag::CardinalNumber)]);
+        eq(&[TestWord::Word("-4", Tag::CardinalNumber)]);
+        eq(&[TestWord::Word("-5.5", Tag::CardinalNumber)]);
+        eq(&[TestWord::Word("+6", Tag::CardinalNumber)]);
+        eq(&[TestWord::Word("+7.7", Tag::CardinalNumber)]);
+        eq(&[TestWord::Word("8,000", Tag::CardinalNumber)]);
+        eq(&[TestWord::Word("9_000", Tag::CardinalNumber)]);
+        eq(&[TestWord::Word("10/100", Tag::CardinalNumber)]);
     }
 
     #[test]
     fn test_static() {
         eq(&[
-            ("The", Tag::Determiner),
-            ("cat", Tag::NounSingularOrMass),
-            ("sat", Tag::VerbPastTense),
-            ("on", Tag::PrepositionOrSubordinatingConjunction),
-            ("the", Tag::Determiner),
-            ("mat", Tag::NounSingularOrMass),
-            (".", Tag::EndOfSentence),
+            TestWord::Word("The", Tag::Determiner),
+            TestWord::Space,
+            TestWord::Word("cat", Tag::NounSingularOrMass),
+            TestWord::Space,
+            TestWord::Word("sat", Tag::VerbPastTense),
+            TestWord::Space,
+            TestWord::Word("on", Tag::PrepositionOrSubordinatingConjunction),
+            TestWord::Space,
+            TestWord::Word("the", Tag::Determiner),
+            TestWord::Space,
+            TestWord::Word("mat", Tag::NounSingularOrMass),
+            TestWord::Word(".", Tag::EndOfSentence),
         ]);
     }
     static BLOG_POST: &str = include_str!("../benches/data/leaving-rust-gamedev.md");

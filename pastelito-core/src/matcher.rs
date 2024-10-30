@@ -460,22 +460,32 @@ pub fn match_words<'input, 'm, M>(
 mod tests {
     use pastelito_model::Tag;
 
-    use crate::{block::test::with_testing_block, matcher::match_words};
+    use crate::{
+        block::test::{with_testing_block, TestWord},
+        matcher::match_words,
+    };
 
     use super::{Any, EndsWithIgnoreCase, Ignore, IgnoreCase, Matcher, Opt, Or, TagFn};
 
     fn eq<P: Matcher>(pattern: P, expected: Vec<Vec<&str>>) {
         let words = &[
-            ("The", Tag::Determiner),
-            ("cat", Tag::NounSingularOrMass),
-            ("sat", Tag::VerbPastTense),
-            ("on", Tag::PrepositionOrSubordinatingConjunction),
-            ("the", Tag::Determiner),
-            ("big", Tag::Adjective),
-            (",", Tag::Comma),
-            ("green", Tag::Adjective),
-            ("mat", Tag::NounSingularOrMass),
-            (".", Tag::EndOfSentence),
+            TestWord::Word("The", Tag::Determiner),
+            TestWord::Space,
+            TestWord::Word("cat", Tag::NounSingularOrMass),
+            TestWord::Space,
+            TestWord::Word("sat", Tag::VerbPastTense),
+            TestWord::Space,
+            TestWord::Word("on", Tag::PrepositionOrSubordinatingConjunction),
+            TestWord::Space,
+            TestWord::Word("the", Tag::Determiner),
+            TestWord::Space,
+            TestWord::Word("big", Tag::Adjective),
+            TestWord::Word(",", Tag::Comma),
+            TestWord::Space,
+            TestWord::Word("green", Tag::Adjective),
+            TestWord::Space,
+            TestWord::Word("mat", Tag::NounSingularOrMass),
+            TestWord::Word(".", Tag::EndOfSentence),
         ];
 
         with_testing_block(words, |block| {
