@@ -122,7 +122,7 @@ export class Display implements vscode.Disposable {
     constructor() {
         this.disposables.push(
             vscode.workspace.onDidChangeConfiguration((event) => {
-                if (event.affectsConfiguration('pastelito.theme')) {
+                if (Theme.affectedBy(event)) {
                     const oldMatchers = this.matchers;
 
                     // Create new matchers with the new theme.

@@ -37,7 +37,7 @@
   "contributes": {
     "configuration": {
       "properties": {
-        "pastelito.theme": {
+        "pastelito.builtin": {
           "markdownDescription": "The color theme",
           "default": "pastel-qt",
           "type": "string",
@@ -50,6 +50,36 @@
             "pastel-qt",
             "sweethope"
           ]
+        },
+        "pastelito.custom": {
+          "markdownDescription": "Enable the custom theme",
+          "default": false,
+          "type": "boolean"
+        },
+        "pastelito.customTheme.abstractNouns": {
+          "markdownDescription": "Color for abstract nouns",
+          "default": "",
+          "type": "string"
+        },
+        "pastelito.customTheme.adjectives": {
+          "markdownDescription": "Color for adjectives",
+          "default": "",
+          "type": "string"
+        },
+        "pastelito.customTheme.academicAdWords": {
+          "markdownDescription": "Color for academic adverbs/adjectives",
+          "default": "",
+          "type": "string"
+        },
+        "pastelito.customTheme.beVerbs": {
+          "markdownDescription": "Color for `be` verbs",
+          "default": "",
+          "type": "string"
+        },
+        "pastelito.customTheme.prepositions": {
+          "markdownDescription": "Color for prepositions",
+          "default": "",
+          "type": "string"
         }
       }
     }

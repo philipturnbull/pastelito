@@ -21,6 +21,14 @@ export class Theme {
         this.colors.set(PREPOSITIONS, colors.prepositions);
     }
 
+    static affectedBy(event: vscode.ConfigurationChangeEvent): boolean {
+        return [
+            'pastelito.builtin',
+            'pastelito.custom',
+            'pastelito.customTheme'
+        ].some((key) => event.affectsConfiguration(key));
+    }
+
     colorFor(measurement: MeasurementKey): string {
         return this.colors.get(measurement)!;
     }
@@ -44,25 +52,24 @@ export class Theme {
     }
 
     static current(): Theme {
-        let themeName = vscode.workspace.getConfiguration('pastelito').get<string>('theme');
-        if (themeName === undefined) {
-            return FALLBACK;
-        } else {
-            return BUILT_IN_THEMES.get(themeName) || FALLBACK;
+        const pastelito = vscode.workspace.getConfiguration('pastelito');
+        if (pastelito.get<boolean>('custom')) {
+            return new Theme('custom', {
+                abstract_nouns: pastelito.get<string>('customTheme.abstractNouns')!,
+                adjectives: pastelito.get<string>('customTheme.adjectives')!,
+                academic_ad_words: pastelito.get<string>('customTheme.academicAdWords')!,
+                be_verbs: pastelito.get<string>('customTheme.beVerbs')!,
+                prepositions: pastelito.get<string>('customTheme.prepositions')!,
+            });
         }
+
+        const themeName = vscode.workspace.getConfiguration('pastelito').get<string>('builtin') || DEFAULT_BUILTIN_THEME;
+        return BUILTIN_THEMES.get(themeName)!;
     }
 }
 
-const FALLBACK_COLOR = 'rgba((var(--vscode-editor-foreground), 0.7)';
-export const FALLBACK = new Theme('fallback', {
-    abstract_nouns: FALLBACK_COLOR,
-    adjectives: FALLBACK_COLOR,
-    academic_ad_words: FALLBACK_COLOR,
-    be_verbs: FALLBACK_COLOR,
-    prepositions: FALLBACK_COLOR,
-});
-
-const BUILT_IN_THEMES = new Map<string, Theme>([
+const DEFAULT_BUILTIN_THEME = 'fairydust-8';
+const BUILTIN_THEMES = new Map<string, Theme>([
     [
         'pastel-qt',
 
