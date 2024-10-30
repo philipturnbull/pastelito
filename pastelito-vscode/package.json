@@ -86,7 +86,8 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "build": "npm run compile && cargo build --release --target wasm32-unknown-unknown --target-dir ./target-wasm",
+    "build-wasm": "cargo build --release --target wasm32-unknown-unknown --target-dir ./target-wasm && cp ./target-wasm/wasm32-unknown-unknown/release/pastelito_vscode.wasm ./out",
+    "build": "npm run compile && npm run build-wasm",
     "wit-bindgen": "wit-bindgen rust wit/pastelito.wit --out-dir ./src",
     "generate:model": "wit2ts --outDir ./src ./wit",
     "compile": "tsc -p ./",

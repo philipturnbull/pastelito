@@ -7,9 +7,7 @@ import { Memory, WasmContext } from '@vscode/wasm-component-model';
 async function initPastelitoAPI(extensionUri: vscode.Uri): Promise<pastelito.Exports> {
     const filename = vscode.Uri.joinPath(
         extensionUri,
-        'target-wasm',
-        'wasm32-unknown-unknown',
-        'release',
+        'out',
         'pastelito_vscode.wasm'
     );
 
