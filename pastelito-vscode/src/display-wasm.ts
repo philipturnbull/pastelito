@@ -63,7 +63,7 @@ export class WASMDisplay extends Display {
         try {
             this.update_(document);
         } catch (e) {
-            this.log(`Update failed for ${document.uri.toString()}:\n${e}`);
+            this.logError(`Update failed for ${document.uri.toString()}:\n${e}`);
         }
     }
 
@@ -72,7 +72,9 @@ export class WASMDisplay extends Display {
             return;
         }
 
+        const applyStart = new Date().getTime();
         const results = this.api.applyDefaultRules(document.getText());
+        const applyElapsed = new Date().getTime() - applyStart;
 
         const uri = document.uri;
         this.setMeasurements(uri, results.measurements.map(Measurement.fromWASM));
@@ -91,5 +93,11 @@ export class WASMDisplay extends Display {
         );
 
         this.diagnostics.set(uri, warnings);
+
+        const basename = uri.fsPath.split('/').pop() || uri.fsPath;
+        this.log(
+            `Updated ${basename}: ${results.measurements.length} measurements, ${results.warnings.length} warnings\n` +
+            `- applyDefaultRules: ${applyElapsed}ms\n`
+        );
     }
 }

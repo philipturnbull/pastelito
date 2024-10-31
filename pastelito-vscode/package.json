@@ -91,6 +91,11 @@
           "markdownDescription": "Enable pastelito highlighting by default",
           "default": true,
           "type": "boolean"
+        },
+        "pastelito.verboseLogging": {
+          "markdownDescription": "Enable verbose logging to the `Pastelito` output channel",
+          "default": false,
+          "type": "boolean"
         }
       }
     }

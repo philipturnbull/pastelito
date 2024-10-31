@@ -117,6 +117,8 @@ class Matchers implements vscode.Disposable {
 
 export class Display implements vscode.Disposable {
     private outputChannel: vscode.OutputChannel;
+    private verbose = false;
+
     protected disposables: vscode.Disposable[] = [];
     private matchers: Matchers;
 
@@ -128,6 +130,7 @@ export class Display implements vscode.Disposable {
 
     constructor(outputChannel: vscode.OutputChannel) {
         this.outputChannel = outputChannel;
+        this.verbose = vscode.workspace.getConfiguration('pastelito').get<boolean>('verboseLogging') === true;
 
         this.enabled = vscode.workspace.getConfiguration('pastelito').get<boolean>('enabledByDefault') === true;
 
@@ -147,6 +150,10 @@ export class Display implements vscode.Disposable {
                     // prevents flickering.
                     oldMatchers.dispose();
                 }
+
+                if (event.affectsConfiguration('pastelito.verboseLogging')) {
+                    this.verbose = vscode.workspace.getConfiguration('pastelito').get<boolean>('verboseLogging') === true;
+                }
             })
         );
 
@@ -160,6 +167,9 @@ export class Display implements vscode.Disposable {
 
         this.disposables.push(
             vscode.workspace.onDidCloseTextDocument((document) => {
+                // FIXME? This also fires when an editor is not longer visible.
+                // We only want to clear the cache if the document is actually
+                // closed.
                 this.clearCache(document.uri);
             })
         );
@@ -173,10 +183,18 @@ export class Display implements vscode.Disposable {
     }
 
     log(message: string) {
-        this.outputChannel.appendLine(message);
+        if (this.verbose) {
+            this.outputChannel.appendLine(message);
+        }
+    }
+
+    logError(message: string) {
+        this.outputChannel.appendLine(`[ERROR] ${message}`);
     }
 
     clearCache(uri: vscode.Uri) {
+        const basename = uri.fsPath.split('/').pop() || uri.fsPath;
+        this.log(`Clearing cache for ${basename}`);
         this.measurementCache.delete(uri.toString());
     }
 
@@ -211,6 +229,7 @@ export class Display implements vscode.Disposable {
 
     toggleHighlighting() {
         this.enabled = !this.enabled;
+        this.log(`Highlighting ${this.enabled ? 'enabled' : 'disabled'}`);
 
         vscode.window.visibleTextEditors.forEach((editor) => {
             this.createDecorations(editor);
