@@ -25,6 +25,12 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for a high-level overview of the implemen
 
 ## Credits
 
+### Model
+
+The perceptron model is from [jdkato/prose](https://github.com/jdkato/prose).
+
+### Themes
+
 The built-in themes are all from Lospec:
 * [curiosities](https://lospec.com/palette-list/curiosities) by [@sukinapan](https://lospec.com/sukinapan)
 * [hydrangea-11](https://lospec.com/palette-list/hydrangea-11) by [@dinchenix](https://lospec.com/dinchenix)
