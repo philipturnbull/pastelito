@@ -4,6 +4,8 @@ Pastelito is a VSCode extension that helps you write better markdown documents.
 
 Pastelito does not aim to be a full spelling or grammar checker. Rather, it aims to just highlight general patterns in your writing so you can decide which parts need rewording.
 
+https://github.com/user-attachments/assets/06327bc3-3ca5-4fa0-854b-c07c91140f4b
+
 ## Features
 
 Pastelito highlights these grammatical features:
